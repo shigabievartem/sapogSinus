@@ -1,0 +1,639 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.chart.AreaChart?>
+<?import javafx.scene.chart.BarChart?>
+<?import javafx.scene.chart.CategoryAxis?>
+<?import javafx.scene.chart.NumberAxis?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.CheckBox?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ProgressIndicator?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.Slider?>
+<?import javafx.scene.control.SplitPane?>
+<?import javafx.scene.control.Tab?>
+<?import javafx.scene.control.TabPane?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Pane?>
+<?import javafx.scene.layout.RowConstraints?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.shape.Circle?>
+<?import javafx.scene.text.Font?>
+
+<VBox fx:id="mainElement" prefHeight="600.0" prefWidth="800.0" xmlns="http://javafx.com/javafx/8.0.172-ea" xmlns:fx="http://javafx.com/fxml/1" fx:controller="sample.controllers.MainWindowController">
+   <children>
+      <HBox maxHeight="100.0" minHeight="100.0" prefHeight="100.0" spacing="15.0">
+         <children>
+            <VBox>
+               <children>
+                  <Pane maxHeight="40.0">
+                     <children>
+                        <Label alignment="BASELINE_LEFT" prefHeight="14.0" prefWidth="105.0" text="Connection">
+                           <font>
+                              <Font size="15.0" />
+                           </font>
+                           <padding>
+                              <Insets bottom="5.0" left="10.0" right="5.0" top="5.0" />
+                           </padding>
+                        </Label>
+                     </children>
+                  </Pane>
+                  <Pane>
+                     <children>
+                        <HBox spacing="10.0">
+                           <children>
+                              <ComboBox id="port_button" fx:id="port_button" editable="true" prefHeight="50.0" prefWidth="100.0">
+                                 <HBox.margin>
+                                    <Insets left="10.0" top="5.0" />
+                                 </HBox.margin>
+                              </ComboBox>
+                              <Button id="connect_button" fx:id="connect_button" mnemonicParsing="false" onAction="#connect" prefHeight="50.0" prefWidth="70.0" text="Connect" textAlignment="CENTER">
+                                 <font>
+                                    <Font size="11.0" />
+                                 </font>
+                                 <HBox.margin>
+                                    <Insets top="5.0" />
+                                 </HBox.margin>
+                              </Button>
+                              <Button id="disconnect_button" fx:id="disconnect_button" mnemonicParsing="false" onAction="#disconnect" prefHeight="50.0" prefWidth="70.0" text="Disconnect" textAlignment="CENTER">
+                                 <font>
+                                    <Font size="11.0" />
+                                 </font>
+                                 <HBox.margin>
+                                    <Insets top="5.0" />
+                                 </HBox.margin>
+                              </Button>
+                              <Button id="reboot_button" fx:id="reboot_button" mnemonicParsing="false" onAction="#reboot" prefHeight="50.0" prefWidth="70.0" text="Reboot">
+                                 <font>
+                                    <Font size="11.0" />
+                                 </font>
+                                 <HBox.margin>
+                                    <Insets top="5.0" />
+                                 </HBox.margin>
+                              </Button>
+                              <Button id="boot_button" fx:id="boot_button" mnemonicParsing="false" onAction="#boot" prefHeight="50.0" prefWidth="70.0" text="Boot">
+                                 <font>
+                                    <Font size="11.0" />
+                                 </font>
+                                 <HBox.margin>
+                                    <Insets top="5.0" />
+                                 </HBox.margin>
+                              </Button>
+                              <Button id="beep_button" fx:id="beep_button" mnemonicParsing="false" onAction="#beep" prefHeight="50.0" prefWidth="70.0" text="Beep">
+                                 <font>
+                                    <Font size="11.0" />
+                                 </font>
+                                 <HBox.margin>
+                                    <Insets right="10.0" top="5.0" />
+                                 </HBox.margin>
+                              </Button>
+                           </children>
+                        </HBox>
+                     </children>
+                  </Pane>
+               </children>
+            </VBox>
+            <ImageView fitHeight="90.0" fitWidth="240.0" pickOnBounds="true" preserveRatio="true">
+               <HBox.margin>
+                  <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+               </HBox.margin>
+               <image>
+                  <Image url="@../images/logo%20test.png" />
+               </image>
+            </ImageView>
+         </children>
+      </HBox>
+      <TabPane maxHeight="470.0" minHeight="470.0" prefHeight="470.0" tabClosingPolicy="UNAVAILABLE">
+         <tabs>
+            <Tab closable="false" text="Setup">
+               <content>
+                  <AnchorPane minHeight="0.0" minWidth="0.0">
+                     <children>
+                        <VBox maxHeight="440.0" minHeight="440.0" prefHeight="440.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+                           <children>
+                              <HBox maxHeight="220.0" minHeight="220.0" prefHeight="220.0">
+                                 <children>
+                                    <VBox>
+                                       <children>
+                                          <HBox>
+                                             <children>
+                                                <VBox>
+                                                   <children>
+                                                      <Label text="Interfaces">
+                                                         <VBox.margin>
+                                                            <Insets />
+                                                         </VBox.margin>
+                                                         <font>
+                                                            <Font size="15.0" />
+                                                         </font>
+                                                         <padding>
+                                                            <Insets bottom="5.0" />
+                                                         </padding>
+                                                      </Label>
+                                                      <GridPane hgap="5.0" prefHeight="105.0" prefWidth="250.0" vgap="5.0">
+                                                         <columnConstraints>
+                                                            <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+                                                            <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+                                                            <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+                                                         </columnConstraints>
+                                                         <rowConstraints>
+                                                            <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                                            <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                                            <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                                         </rowConstraints>
+                                                         <children>
+                                                            <Label text="esc_base" />
+                                                            <Label text="esc_index" GridPane.rowIndex="1" />
+                                                            <Label text="pwm_enable" GridPane.rowIndex="2" />
+                                                            <TextField id="esc_base_value" fx:id="esc_base_value" maxHeight="25.0" maxWidth="80.0" minHeight="25.0" minWidth="80.0" prefHeight="25.0" prefWidth="80.0" stylesheets="@../css/styles.css" GridPane.columnIndex="1" />
+                                                            <TextField id="esc_index_value" fx:id="esc_index_value" maxHeight="25.0" maxWidth="80.0" minHeight="25.0" minWidth="80.0" prefHeight="25.0" prefWidth="80.0" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                                                            <CheckBox id="pwm_enable_value" fx:id="pwm_enable_value" alignment="CENTER" mnemonicParsing="false" prefHeight="25.0" prefWidth="25.0" selected="true" text="" GridPane.columnIndex="1" GridPane.rowIndex="2">
+                                                               <GridPane.margin>
+                                                                  <Insets left="35.0" />
+                                                               </GridPane.margin></CheckBox>
+                                                            <HBox spacing="5.0" GridPane.columnIndex="2">
+                                                               <children>
+                                                                  <Button id="esc_base_button" fx:id="esc_base_button" mnemonicParsing="false" onAction="#setValue" prefHeight="50.0" prefWidth="50.0" text="Set" GridPane.columnIndex="2">
+                                                                     <GridPane.margin>
+                                                                        <Insets left="5.0" />
+                                                                     </GridPane.margin>
+                                                                  </Button>
+                                                                  <ProgressIndicator id="esc_base_indicator" fx:id="esc_base_indicator" maxWidth="17.0" minWidth="17.0" mouseTransparent="true" prefWidth="17.0" visible="false" />
+                                                               </children>
+                                                               <GridPane.margin>
+                                                                  <Insets left="5.0" />
+                                                               </GridPane.margin>
+                                                            </HBox>
+                                                            <HBox layoutX="183.0" layoutY="10.0" spacing="5.0" GridPane.columnIndex="2" GridPane.rowIndex="1">
+                                                               <children>
+                                                                  <Button id="esc_index_button" fx:id="esc_index_button" mnemonicParsing="false" onAction="#setValue" prefHeight="50.0" prefWidth="50.0" text="Set" GridPane.columnIndex="2">
+                                                                     <GridPane.margin>
+                                                                        <Insets left="5.0" />
+                                                                     </GridPane.margin>
+                                                                  </Button>
+                                                                  <ProgressIndicator id="esc_index_indicator" fx:id="esc_index_indicator" maxWidth="17.0" minWidth="17.0" mouseTransparent="true" prefWidth="17.0" visible="false" />
+                                                               </children>
+                                                               <GridPane.margin>
+                                                                  <Insets left="5.0" />
+                                                               </GridPane.margin>
+                                                            </HBox>
+                                                            <HBox layoutX="183.0" layoutY="47.0" spacing="5.0" GridPane.columnIndex="2" GridPane.rowIndex="2">
+                                                               <children>
+                                                                  <Button id="pwm_enable_button" fx:id="pwm_enable_button" mnemonicParsing="false" onAction="#setValue" prefHeight="50.0" prefWidth="50.0" text="Set" GridPane.columnIndex="2">
+                                                                     <GridPane.margin>
+                                                                        <Insets left="5.0" />
+                                                                     </GridPane.margin>
+                                                                  </Button>
+                                                                  <ProgressIndicator id="pwm_enable_indicator" fx:id="pwm_enable_indicator" maxWidth="17.0" minWidth="17.0" mouseTransparent="true" prefWidth="17.0" visible="false" />
+                                                               </children>
+                                                               <padding>
+                                                                  <Insets left="5.0" />
+                                                               </padding>
+                                                            </HBox>
+                                                         </children>
+                                                         <VBox.margin>
+                                                            <Insets left="5.0" right="5.0" />
+                                                         </VBox.margin>
+                                                         <opaqueInsets>
+                                                            <Insets />
+                                                         </opaqueInsets>
+                                                      </GridPane>
+                                                   </children>
+                                                   <HBox.margin>
+                                                      <Insets />
+                                                   </HBox.margin>
+                                                </VBox>
+                                                <VBox>
+                                                   <children>
+                                                      <Label text="Motor">
+                                                         <font>
+                                                            <Font size="15.0" />
+                                                         </font>
+                                                         <padding>
+                                                            <Insets bottom="5.0" />
+                                                         </padding></Label>
+                                                      <GridPane hgap="5.0" prefHeight="105.0" prefWidth="250.0" vgap="5.0">
+                                                         <columnConstraints>
+                                                            <ColumnConstraints hgrow="SOMETIMES" maxWidth="95.0" minWidth="10.0" prefWidth="85.0" />
+                                                            <ColumnConstraints hgrow="SOMETIMES" maxWidth="84.0" minWidth="10.0" prefWidth="81.0" />
+                                                            <ColumnConstraints hgrow="SOMETIMES" maxWidth="89.0" minWidth="10.0" prefWidth="73.0" />
+                                                         </columnConstraints>
+                                                         <rowConstraints>
+                                                            <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                                            <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                                            <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                                         </rowConstraints>
+                                                         <children>
+                                                            <Label text="mot_num_poles" />
+                                                            <Label text="mot_dc_slope" GridPane.rowIndex="1" />
+                                                            <Label text="mot_dc_accel" GridPane.rowIndex="2" />
+                                                            <TextField id="mot_num_poles_value" fx:id="mot_num_poles_value" maxHeight="25.0" maxWidth="80.0" minHeight="25.0" minWidth="80.0" prefHeight="25.0" prefWidth="80.0" GridPane.columnIndex="1" />
+                                                            <TextField id="mot_dc_slope_value" fx:id="mot_dc_slope_value" maxHeight="25.0" maxWidth="80.0" minHeight="25.0" minWidth="80.0" prefHeight="25.0" prefWidth="80.0" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                                                            <TextField id="mot_dc_accel_value" fx:id="mot_dc_accel_value" maxHeight="25.0" maxWidth="80.0" minHeight="25.0" minWidth="80.0" prefHeight="25.0" prefWidth="80.0" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+                                                            <HBox spacing="5.0" GridPane.columnIndex="2">
+                                                               <children>
+                                                                  <Button id="mot_num_poles_button" fx:id="mot_num_poles_button" mnemonicParsing="false" onAction="#setValue" prefHeight="50.0" prefWidth="50.0" text="Set" GridPane.columnIndex="2">
+                                                                     <GridPane.margin>
+                                                                        <Insets left="5.0" />
+                                                                     </GridPane.margin>
+                                                                  </Button>
+                                                                  <ProgressIndicator id="mot_num_poles_indicator" fx:id="mot_num_poles_indicator" maxWidth="17.0" minWidth="17.0" mouseTransparent="true" prefWidth="17.0" visible="false" />
+                                                               </children>
+                                                               <GridPane.margin>
+                                                                  <Insets left="5.0" />
+                                                               </GridPane.margin>
+                                                            </HBox>
+                                                            <HBox layoutX="178.0" layoutY="10.0" spacing="5.0" GridPane.columnIndex="2" GridPane.rowIndex="1">
+                                                               <children>
+                                                                  <Button id="mot_dc_slope_button" fx:id="mot_dc_slope_button" mnemonicParsing="false" onAction="#setValue" prefHeight="50.0" prefWidth="50.0" text="Set" GridPane.columnIndex="2">
+                                                                     <GridPane.margin>
+                                                                        <Insets left="5.0" />
+                                                                     </GridPane.margin>
+                                                                  </Button>
+                                                                  <ProgressIndicator id="mot_dc_slopes_indicator" fx:id="mot_dc_slope_indicator" maxWidth="17.0" minWidth="17.0" mouseTransparent="true" prefWidth="17.0" visible="false" />
+                                                               </children>
+                                                               <GridPane.margin>
+                                                                  <Insets left="5.0" />
+                                                               </GridPane.margin>
+                                                            </HBox>
+                                                            <HBox layoutX="178.0" layoutY="47.0" spacing="5.0" GridPane.columnIndex="2" GridPane.rowIndex="2">
+                                                               <children>
+                                                                  <Button id="mot_dc_accel_button" fx:id="mot_dc_accel_button" mnemonicParsing="false" onAction="#setValue" prefHeight="50.0" prefWidth="50.0" text="Set" GridPane.columnIndex="2">
+                                                                     <GridPane.margin>
+                                                                        <Insets left="5.0" />
+                                                                     </GridPane.margin>
+                                                                  </Button>
+                                                                  <ProgressIndicator id="moe_dc_accel_indicator" fx:id="mot_dc_accel_indicator" maxWidth="17.0" minWidth="17.0" mouseTransparent="true" prefWidth="17.0" visible="false" />
+                                                               </children>
+                                                               <GridPane.margin>
+                                                                  <Insets left="5.0" />
+                                                               </GridPane.margin>
+                                                            </HBox>
+                                                         </children>
+                                                         <opaqueInsets>
+                                                            <Insets />
+                                                         </opaqueInsets>
+                                                         <VBox.margin>
+                                                            <Insets left="5.0" right="5.0" />
+                                                         </VBox.margin>
+                                                      </GridPane>
+                                                   </children>
+                                                   <HBox.margin>
+                                                      <Insets bottom="5.0" left="5.0" right="5.0" />
+                                                   </HBox.margin>
+                                                </VBox>
+                                             </children>
+                                          </HBox>
+                                          <VBox>
+                                             <children>
+                                                <Label text="Config">
+                                                   <font>
+                                                      <Font size="15.0" />
+                                                   </font>
+                                                   <padding>
+                                                      <Insets bottom="5.0" />
+                                                   </padding>
+                                                </Label>
+                                                <HBox maxHeight="40.0" minHeight="40.0" prefHeight="40.0" spacing="10.0">
+                                                   <children>
+                                                      <Button id="cfg_set_all_button" fx:id="sett_all_to_board" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" mnemonicParsing="false" onAction="#setAllToBoard" prefHeight="40.0" prefWidth="85.0" text="Set all to board" textAlignment="CENTER" wrapText="true">
+                                                         <font>
+                                                            <Font size="11.0" />
+                                                         </font>
+                                                         <HBox.margin>
+                                                            <Insets left="10.0" />
+                                                         </HBox.margin>
+                                                      </Button>
+                                                      <Button id="cfg_load_all_button" fx:id="load_all_from_board" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" mnemonicParsing="false" onAction="#loadAllFromBoard" prefHeight="40.0" prefWidth="85.0" text="Load all from board" textAlignment="CENTER" wrapText="true">
+                                                         <font>
+                                                            <Font size="11.0" />
+                                                         </font>
+                                                         <HBox.margin>
+                                                            <Insets />
+                                                         </HBox.margin>
+                                                      </Button>
+                                                      <Button id="cfg_save_to_file_button" fx:id="save_config_to_file" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" mnemonicParsing="false" onAction="#saveConfigToFile" prefHeight="40.0" prefWidth="85.0" text="Save config to file" textAlignment="CENTER" wrapText="true">
+                                                         <font>
+                                                            <Font size="11.0" />
+                                                         </font>
+                                                         <HBox.margin>
+                                                            <Insets />
+                                                         </HBox.margin>
+                                                      </Button>
+                                                      <Button id="cfg_load_from_file_button" fx:id="load_config_from_file" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" mnemonicParsing="false" onAction="#loadConfigFromFile" prefHeight="40.0" prefWidth="85.0" text="Load config from file" textAlignment="CENTER" wrapText="true">
+                                                         <font>
+                                                            <Font size="11.0" />
+                                                         </font>
+                                                         <HBox.margin>
+                                                            <Insets />
+                                                         </HBox.margin>
+                                                      </Button>
+                                                      <Button id="cfg_default_button" fx:id="load_default_config" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" mnemonicParsing="false" onAction="#loadDefaultConfig" prefHeight="40.0" prefWidth="85.0" text="Load default config" textAlignment="CENTER" wrapText="true">
+                                                         <font>
+                                                            <Font size="11.0" />
+                                                         </font>
+                                                         <HBox.margin>
+                                                            <Insets />
+                                                         </HBox.margin>
+                                                      </Button>
+                                                   </children>
+                                                </HBox>
+                                             </children>
+                                          </VBox>
+                                       </children>
+                                       <HBox.margin>
+                                          <Insets />
+                                       </HBox.margin>
+                                    </VBox>
+                                    <VBox>
+                                       <children>
+                                          <Label text="Control">
+                                             <font>
+                                                <Font size="15.0" />
+                                             </font>
+                                             <padding>
+                                                <Insets bottom="5.0" />
+                                             </padding></Label>
+                                          <GridPane hgap="5.0" prefHeight="175.0" prefWidth="250.0" vgap="5.0">
+                                             <columnConstraints>
+                                                <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+                                                <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+                                                <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+                                             </columnConstraints>
+                                             <rowConstraints>
+                                                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                             </rowConstraints>
+                                             <children>
+                                                <Label text="mot_pwm_hz" />
+                                                <Label text="ctl_dir" GridPane.rowIndex="1" />
+                                                <Label text="temp_lim" GridPane.rowIndex="2" />
+                                                <TextField id="mot_pwm_hz_value" fx:id="mot_pwm_hz_value" maxHeight="25.0" maxWidth="80.0" minHeight="25.0" minWidth="80.0" prefHeight="25.0" prefWidth="80.0" GridPane.columnIndex="1" />
+                                                <TextField id="mot_i_max_value" fx:id="mot_i_max_value" maxHeight="25.0" maxWidth="80.0" minHeight="25.0" minWidth="80.0" prefHeight="25.0" prefWidth="80.0" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+                                                <TextField id="temp_lim_value" fx:id="temp_lim_value" maxHeight="25.0" maxWidth="80.0" minHeight="25.0" minWidth="80.0" prefHeight="25.0" prefWidth="80.0" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+                                                <TextField id="sens_i_scale_value" fx:id="sens_i_scale_value" layoutX="91.0" layoutY="85.0" maxHeight="25.0" maxWidth="80.0" minHeight="25.0" minWidth="80.0" prefHeight="25.0" prefWidth="80.0" GridPane.columnIndex="1" GridPane.rowIndex="4" />
+                                                <CheckBox id="ctl_dir_value" fx:id="ctl_dir_value" alignment="CENTER" mnemonicParsing="false" prefHeight="25.0" prefWidth="25.0" selected="true" text="" GridPane.columnIndex="1" GridPane.rowIndex="1">
+                                                   <GridPane.margin>
+                                                      <Insets left="35.0" />
+                                                   </GridPane.margin>
+                                                </CheckBox>
+                                                <Label layoutX="10.0" layoutY="89.0" text="mot_i_max" GridPane.rowIndex="3" />
+                                                <Label layoutX="10.0" layoutY="125.0" text="sens_i_scale" GridPane.rowIndex="4" />
+                                                <HBox spacing="5.0" GridPane.columnIndex="2">
+                                                   <children>
+                                                      <Button id="mot_pwm_hz_button" fx:id="mot_pwm_hz_button" mnemonicParsing="false" onAction="#setValue" prefHeight="50.0" prefWidth="50.0" text="Set" GridPane.columnIndex="2">
+                                                         <GridPane.margin>
+                                                            <Insets left="5.0" />
+                                                         </GridPane.margin>
+                                                      </Button>
+                                                      <ProgressIndicator id="mot_pwm_hz_indicator" fx:id="mot_pwm_hz_indicator" maxWidth="17.0" minWidth="17.0" mouseTransparent="true" prefWidth="17.0" visible="false" />
+                                                   </children>
+                                                   <padding>
+                                                      <Insets left="5.0" />
+                                                   </padding>
+                                                </HBox>
+                                                <HBox layoutX="176.0" layoutY="10.0" spacing="5.0" GridPane.columnIndex="2" GridPane.rowIndex="1">
+                                                   <children>
+                                                      <Button id="ctl_dir_button" fx:id="ctl_dir_button" mnemonicParsing="false" onAction="#setValue" prefHeight="50.0" prefWidth="50.0" text="Set" GridPane.columnIndex="2">
+                                                         <GridPane.margin>
+                                                            <Insets left="5.0" />
+                                                         </GridPane.margin>
+                                                      </Button>
+                                                      <ProgressIndicator id="ctl_dir_indicator" fx:id="ctl_dir_indicator" maxWidth="17.0" minWidth="17.0" mouseTransparent="true" prefWidth="17.0" visible="false" />
+                                                   </children>
+                                                   <padding>
+                                                      <Insets left="5.0" />
+                                                   </padding>
+                                                </HBox>
+                                                <HBox layoutX="10.0" layoutY="10.0" spacing="5.0" GridPane.columnIndex="2" GridPane.rowIndex="2">
+                                                   <children>
+                                                      <Button id="temp_lim_button" fx:id="temp_lim_button" mnemonicParsing="false" onAction="#setValue" prefHeight="50.0" prefWidth="50.0" text="Set" GridPane.columnIndex="2">
+                                                         <GridPane.margin>
+                                                            <Insets left="5.0" />
+                                                         </GridPane.margin>
+                                                      </Button>
+                                                      <ProgressIndicator id="temp_lim_indicator" fx:id="temp_lim_indicator" maxWidth="17.0" minWidth="17.0" mouseTransparent="true" prefWidth="17.0" visible="false" />
+                                                   </children>
+                                                   <padding>
+                                                      <Insets left="5.0" />
+                                                   </padding>
+                                                </HBox>
+                                                <HBox layoutX="10.0" layoutY="10.0" spacing="5.0" GridPane.columnIndex="2" GridPane.rowIndex="3">
+                                                   <children>
+                                                      <Button id="mot_i_max_button" fx:id="mot_i_max_button" mnemonicParsing="false" onAction="#setValue" prefHeight="50.0" prefWidth="50.0" text="Set" GridPane.columnIndex="2">
+                                                         <GridPane.margin>
+                                                            <Insets left="5.0" />
+                                                         </GridPane.margin>
+                                                      </Button>
+                                                      <ProgressIndicator id="mot_i_max_indicator" fx:id="mot_i_max_indicator" maxWidth="17.0" minWidth="17.0" mouseTransparent="true" prefWidth="17.0" visible="false" />
+                                                   </children>
+                                                   <padding>
+                                                      <Insets left="5.0" />
+                                                   </padding>
+                                                </HBox>
+                                                <HBox layoutX="10.0" layoutY="10.0" spacing="5.0" GridPane.columnIndex="2" GridPane.rowIndex="4">
+                                                   <children>
+                                                      <Button id="sens_i_scale_button" fx:id="sens_i_scale_button" mnemonicParsing="false" onAction="#setValue" prefHeight="50.0" prefWidth="50.0" text="Set" GridPane.columnIndex="2">
+                                                         <GridPane.margin>
+                                                            <Insets left="5.0" />
+                                                         </GridPane.margin>
+                                                      </Button>
+                                                      <ProgressIndicator id="sens_i_scale_indicator" fx:id="sens_i_scale_indicator" maxWidth="17.0" minWidth="17.0" mouseTransparent="true" prefWidth="17.0" visible="false" />
+                                                   </children>
+                                                   <padding>
+                                                      <Insets left="5.0" />
+                                                   </padding>
+                                                </HBox>
+                                             </children>
+                                             <opaqueInsets>
+                                                <Insets />
+                                             </opaqueInsets>
+                                             <VBox.margin>
+                                                <Insets left="5.0" right="5.0" />
+                                             </VBox.margin>
+                                          </GridPane>
+                                       </children>
+                                    </VBox>
+                                 </children>
+                                 <padding>
+                                    <Insets bottom="10.0" left="10.0" right="10.0" top="5.0" />
+                                 </padding>
+                              </HBox>
+                              <SplitPane dividerPositions="0.9" maxHeight="220.0" minHeight="220.0" orientation="VERTICAL" prefHeight="220.0" style="-fx-padding: 0; -fx-background-color: transparent;" stylesheets="@../css/styles.css">
+                                 <items>
+                                    <AnchorPane minHeight="50.0" minWidth="0.0" prefHeight="200.0">
+                                       <children>
+                                          <TextArea id="setup_console" fx:id="setup_console" editable="false" promptText="Console output" style="-fx-background-radius: 0; -fx-control-inner-background: black; -fx-font-family: Consolas; -fx-highlight-fill: white; -fx-highlight-text-fill: black; -fx-text-fill: white; -fx-prompt-text-fill: gray;" wrapText="true" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0" />
+                                       </children>
+                                    </AnchorPane>
+                                    <AnchorPane minHeight="20.0" minWidth="0.0" prefHeight="20.0">
+                                       <children>
+                                          <TextField id="setup_console_text_field" fx:id="setup_console_text_field" promptText="Send command..." style="-fx-background-radius: 0; -fx-control-inner-background: black; -fx-font-family: Consolas; -fx-highlight-fill: white; -fx-highlight-text-fill: black; -fx-text-fill: white; -fx-prompt-text-fill: gray;" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0" />
+                                       </children>
+                                    </AnchorPane>
+                                 </items>
+                                 <VBox.margin>
+                                    <Insets left="10.0" right="10.0" />
+                                 </VBox.margin>
+                              </SplitPane>
+                           </children>
+                        </VBox>
+                     </children>
+                  </AnchorPane>
+               </content>
+            </Tab>
+            <Tab closable="false" text="Testing">
+               <content>
+                  <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
+                     <children>
+                        <VBox layoutX="124.0" layoutY="21.0" maxHeight="400.0" minHeight="440.0" prefHeight="440.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+                           <children>
+                              <HBox maxHeight="100.0" minHeight="100.0" prefHeight="100.0" spacing="25.0">
+                                 <children>
+                                    <VBox>
+                                       <children>
+                                          <Label text="DC">
+                                             <VBox.margin>
+                                                <Insets bottom="10.0" />
+                                             </VBox.margin>
+                                             <font>
+                                                <Font size="15.0" />
+                                             </font>
+                                          </Label>
+                                          <HBox spacing="10.0">
+                                             <children>
+                                                <Button id="dc_arm_button" fx:id="dc_arm_button" mnemonicParsing="false" onAction="#dcArmAction" prefHeight="30.0" prefWidth="70.0" text="dc arm" />
+                                                <Slider id="dc_slider" fx:id="dc_slider" blockIncrement="0.1" majorTickUnit="0.1" max="1.0" minorTickCount="0" prefHeight="50.0" prefWidth="350.0" showTickLabels="true" showTickMarks="true" snapToTicks="true">
+                                                   <padding>
+                                                      <Insets bottom="5.0" top="5.0" />
+                                                   </padding>
+                                                </Slider>
+                                             </children>
+                                          </HBox>
+                                       </children>
+                                       <opaqueInsets>
+                                          <Insets />
+                                       </opaqueInsets>
+                                       <HBox.margin>
+                                          <Insets />
+                                       </HBox.margin>
+                                    </VBox>
+                                    <VBox layoutX="10.0" layoutY="10.0">
+                                       <children>
+                                          <Label text="RPM">
+                                             <VBox.margin>
+                                                <Insets bottom="10.0" />
+                                             </VBox.margin>
+                                             <font>
+                                                <Font size="15.0" />
+                                             </font>
+                                          </Label>
+                                          <HBox spacing="15.0">
+                                             <children>
+                                                <Button id="rpm_arm_button" fx:id="rpm_arm_button" mnemonicParsing="false" onAction="#rpmArmAction" prefHeight="30.0" prefWidth="70.0" text="rpm arm" />
+                                                <TextField id="set_rpm_value" fx:id="set_rpm_value" prefHeight="27.0" prefWidth="70.0" />
+                                                <Button id="set_rpm_button" fx:id="set_rpm_button" layoutX="10.0" layoutY="10.0" mnemonicParsing="false" onAction="#setValue" prefHeight="30.0" prefWidth="70.0" text="set rpm" />
+                                                <ProgressIndicator id="set_rpm_indicator" fx:id="set_rpm_indicator" maxWidth="17.0" minWidth="17.0" mouseTransparent="true" prefHeight="30.0" prefWidth="17.0" visible="false">
+                                                   <HBox.margin>
+                                                      <Insets left="-10.0" />
+                                                   </HBox.margin>
+                                                </ProgressIndicator>
+                                             </children>
+                                          </HBox>
+                                       </children>
+                                    </VBox>
+                                 </children>
+                                 <VBox.margin>
+                                    <Insets />
+                                 </VBox.margin>
+                                 <padding>
+                                    <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
+                                 </padding>
+                              </HBox>
+                              <TabPane maxHeight="340.0" minHeight="340.0" prefHeight="340.0" side="BOTTOM" tabClosingPolicy="UNAVAILABLE">
+                                 <tabs>
+                                    <Tab text="Area chart">
+                                       <content>
+                                          <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="300.0">
+                                             <children>
+                                                <AreaChart layoutX="-87.0" layoutY="-81.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+                                                   <xAxis>
+                                                      <CategoryAxis side="BOTTOM" />
+                                                   </xAxis>
+                                                   <yAxis>
+                                                      <NumberAxis side="LEFT" />
+                                                   </yAxis>
+                                                   <padding>
+                                                      <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
+                                                   </padding>
+                                                </AreaChart>
+                                             </children>
+                                          </AnchorPane>
+                                       </content>
+                                    </Tab>
+                                    <Tab text="Bar chart">
+                                       <content>
+                                          <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
+                                             <children>
+                                                <BarChart AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+                                                   <xAxis>
+                                                      <CategoryAxis side="BOTTOM" />
+                                                   </xAxis>
+                                                   <yAxis>
+                                                      <NumberAxis side="LEFT" />
+                                                   </yAxis>
+                                                   <padding>
+                                                      <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
+                                                   </padding>
+                                                </BarChart>
+                                             </children>
+                                          </AnchorPane>
+                                       </content>
+                                    </Tab>
+                                 </tabs>
+                              </TabPane>
+                           </children>
+                        </VBox>
+                     </children></AnchorPane>
+               </content>
+            </Tab>
+         </tabs>
+      </TabPane>
+      <HBox alignment="BOTTOM_LEFT" maxHeight="30.0" minHeight="30.0" prefHeight="30.0">
+         <children>
+            <Label id="info_voltage" fx:id="vol_info" alignment="CENTER" prefHeight="30.0" prefWidth="100.0" textAlignment="CENTER" />
+            <Separator maxHeight="29.0" minHeight="29.0" orientation="VERTICAL" prefHeight="29.0" />
+            <Label id="info_amperage" fx:id="amp_info" alignment="CENTER" layoutX="10.0" layoutY="10.0" prefHeight="30.0" prefWidth="100.0" textAlignment="CENTER" />
+            <Separator layoutX="110.0" layoutY="10.0" maxHeight="29.0" minHeight="29.0" orientation="VERTICAL" prefHeight="29.0" />
+            <Label id="info_dc" fx:id="dc_info" alignment="CENTER" layoutX="110.0" layoutY="10.0" prefHeight="30.0" prefWidth="100.0" textAlignment="CENTER" />
+            <Separator layoutX="216.0" layoutY="10.0" maxHeight="29.0" minHeight="29.0" orientation="VERTICAL" prefHeight="29.0" />
+            <Label id="info rpm" fx:id="rpm_info" alignment="CENTER" layoutX="210.0" layoutY="10.0" prefHeight="30.0" prefWidth="100.0" textAlignment="CENTER" />
+            <Separator layoutX="322.0" layoutY="10.0" maxHeight="29.0" minHeight="29.0" orientation="VERTICAL" prefHeight="29.0" />
+            <Circle id="info_connection" fx:id="connection_indicator" fill="RED" radius="10.0" stroke="BLACK" strokeType="INSIDE" strokeWidth="0.0">
+               <HBox.margin>
+                  <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+               </HBox.margin>
+            </Circle>
+            <Separator layoutX="428.0" layoutY="10.0" maxHeight="29.0" minHeight="29.0" orientation="VERTICAL" prefHeight="29.0" />
+         </children>
+         <VBox.margin>
+            <Insets />
+         </VBox.margin>
+         <padding>
+            <Insets top="5.0" />
+         </padding>
+      </HBox>
+   </children>
+</VBox>

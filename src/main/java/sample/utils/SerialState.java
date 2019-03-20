@@ -1,0 +1,5 @@
+package sample.utils;
+
+public enum SerialState {
+    NOT_OPEN, EXCEPTION, IDLE, TIMEOUT, BUSY, PARAM_SAVING, PARAM_SAVED, PARAMS_LOADING, PARAMS_LOADED
+}
