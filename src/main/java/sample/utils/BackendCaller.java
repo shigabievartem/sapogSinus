@@ -4,8 +4,6 @@ import javafx.scene.control.TextArea;
 import jssc.SerialPortException;
 import org.jetbrains.annotations.NotNull;
 import sample.objects.ConnectionInfo;
-import sample.utils.callbacks.OnParamLoadListener;
-import sample.utils.callbacks.OnParamSaveListener;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -19,27 +17,10 @@ import static sample.utils.SapogConst.NO_CONNECTION;
 
 public class BackendCaller {
 
-    private final TextArea mainConsole;
+    private TextArea mainConsole;
 
-    private BackendCaller(TextArea mainConsole) {
+    public void setMainConsole(@NotNull TextArea mainConsole) {
         this.mainConsole = mainConsole;
-    }
-
-    /* All things serial */
-    private class PSaver implements OnParamSaveListener {
-        @Override
-        public void OnParamSave() {
-            //TODO Implement properly
-            System.out.println(format("Parameter saved"));
-        }
-    }
-
-    private class PLoader implements OnParamLoadListener {
-        @Override
-        public void OnParamLoad() {
-            //TODO Implement properly
-            System.out.println(format("Parameter loaded"));
-        }
     }
 
     private SerialDevice serial = null;
@@ -47,21 +28,17 @@ public class BackendCaller {
 
     private static volatile BackendCaller instance;
 
-    public static BackendCaller getInstance(TextArea mainConsole) {
+    public static BackendCaller getInstance() {
         BackendCaller localInstance = instance;
         if (localInstance == null) {
             synchronized (BackendCaller.class) {
                 localInstance = instance;
                 if (localInstance == null) {
-                    instance = localInstance = new BackendCaller(mainConsole);
+                    instance = localInstance = new BackendCaller();
                 }
             }
         }
         return localInstance;
-    }
-
-    public static BackendCaller getInstance() {
-        return Objects.requireNonNull(instance, "Console not initialized. Call getInstance with console param.");
     }
 
 //    public synchronized void tellBackSetNewValue() {
@@ -75,8 +52,8 @@ public class BackendCaller {
     public synchronized Object getCurrentValue(String fieldName) {
         System.out.println(format("Loading value for field '%s'", fieldName));
         try {
-            serial.loadParams(fieldName);
-        } catch (IOException e) {
+            serial.loadParam(fieldName);
+        } catch (IOException | SerialPortException e) {
 
         }
         return null;
@@ -86,7 +63,7 @@ public class BackendCaller {
         System.out.println(format("Saving new value '%s' for field '%s'", value, fieldName));
         try {
             serial.saveParam(fieldName, value);
-        } catch (SerialPortException e) {
+        } catch (IOException | SerialPortException e) {
             //TODO check connection and change state
         }
     }
@@ -105,8 +82,9 @@ public class BackendCaller {
 
     public synchronized void connect(@NotNull String port) throws SerialPortException {
         Objects.requireNonNull(port, "Empty port!");
-        if (serial == null) {
+        if ((serial == null) || !serial.isOpened()) {
             serial = new SerialDevice("default_port", port);
+            serial.setConsole(mainConsole);
         } else if (serial.isOpened()) {
             //TODO can not open port when it's already open, this is an error?
         }
@@ -149,7 +127,11 @@ public class BackendCaller {
     }
 
     public String sendCommand(String text) {
-        System.out.println(format("back receive command '%s'", text));
-        return format("command '%s' successfully processed", text);
+        try {
+            serial.sendString(text);
+        } catch (SerialPortException | IOException e) {
+            return e.toString();
+        }
+        return format("", text);
     }
 }

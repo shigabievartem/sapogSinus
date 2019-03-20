@@ -188,7 +188,7 @@ public class MainWindowController {
     /**
      * Бин в котором обращаемся к бэкэнду
      */
-    private final BackendCaller backendCaller = BackendCaller.getInstance(setup_console);
+    private final BackendCaller backendCaller = BackendCaller.getInstance();
 
     /**
      * Стандартное время на выполнение backEnd операции
@@ -220,6 +220,8 @@ public class MainWindowController {
 
         // Обработаем событие потери соединения
         mainElement.sceneProperty().addListener(lostConnectionListener);
+
+        backendCaller.setMainConsole(setup_console);
     }
 
     /**

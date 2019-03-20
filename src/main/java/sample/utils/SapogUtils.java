@@ -181,6 +181,18 @@ public class SapogUtils {
         }
     }
 
+    /**
+     * Метод печатает строку в консоль как есть
+     */
+    public static void printDirect(TextArea console, String text, Object... objects) {
+        if (console == null || isBlankOrNull(text)) return; //---
+        synchronized (console) {
+            runInMainThread(() -> {
+                console.appendText(format(text, objects));
+            });
+        }
+    }
+
 
     public static void runInMainThread(final Runnable runnable) {
         Objects.requireNonNull(runnable, "Empty action!");
