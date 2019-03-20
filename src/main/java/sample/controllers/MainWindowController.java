@@ -328,7 +328,7 @@ public class MainWindowController {
         runSaveAction(() -> {
             Objects.requireNonNull(event, "Empty event!");
             if (event.getTarget() == null || event.getTarget().getClass() != Button.class) {
-                print("Bad button");
+                System.out.println("Bad button");
                 return; //---
             }
 
@@ -464,7 +464,7 @@ public class MainWindowController {
             String configValue = props.getProperty(v.getFieldName());
 
             if (!isBlankOrNull(configValue)) v.setValue(configValue);
-            else print("No value for field '%s'...", k);
+            else System.out.println(format("No value for field '%s'...", k));
         });
     };
 
@@ -488,7 +488,7 @@ public class MainWindowController {
             String configValue = props.getProperty(v.getFieldName());
 
             if (!isBlankOrNull(configValue)) v.setValue(configValue);
-            else print("No value for field '%s'...", k);
+            else System.out.println(format("No value for field '%s'...", k));
         });
     };
 
@@ -536,17 +536,17 @@ public class MainWindowController {
     };
 
     private void applyFieldFilters() {
-        esc_base_value.setTextFormatter(new TextFormatter(new IntegerFilter().setPositiveOnly(true).setMinValue(0).setMaxValue(2047)));
-        esc_index_value.setTextFormatter(new TextFormatter(new IntegerFilter().setPositiveOnly(true).setMinValue(0).setMaxValue(31)));
-        mot_num_poles_value.setTextFormatter(new TextFormatter(new IntegerFilter().setPositiveOnly(true).setMinValue(2).setMaxValue(100)));
-        mot_dc_slope_value.setTextFormatter(new TextFormatter(new DecimalFilter().setPositiveOnly(true).setMinValue(0.1f).setMaxValue(20f)));
-        mot_dc_accel_value.setTextFormatter(new TextFormatter(new DecimalFilter().setPositiveOnly(true).setMinValue(0.001f).setMaxValue(0.5f)));
-        mot_pwm_hz_value.setTextFormatter(new TextFormatter(new IntegerFilter().setPositiveOnly(true).setMinValue(2000).setMaxValue(75000)));
-        temp_lim_value.setTextFormatter(new TextFormatter(new IntegerFilter().setPositiveOnly(true).setMinValue(90).setMaxValue(150)));
-        mot_i_max_value.setTextFormatter(new TextFormatter(new DecimalFilter().setPositiveOnly(true).setMinValue(1f).setMaxValue(60f)));
-        sens_i_scale_value.setTextFormatter(new TextFormatter(new DecimalFilter().setPositiveOnly(true).setMinValue(0f).setMaxValue(1000000f)));
+        esc_base_value.setTextFormatter(new TextFormatter(new IntegerFilter(true, 0, 2047)));
+        esc_index_value.setTextFormatter(new TextFormatter(new IntegerFilter(true, 0, 31)));
+        mot_num_poles_value.setTextFormatter(new TextFormatter(new IntegerFilter(true, 2, 100)));
+        mot_dc_slope_value.setTextFormatter(new TextFormatter(new DecimalFilter(true, 0.1f, 20f)));
+        mot_dc_accel_value.setTextFormatter(new TextFormatter(new DecimalFilter(true, 0.001f, 0.5f)));
+        mot_pwm_hz_value.setTextFormatter(new TextFormatter(new IntegerFilter(true, 2000, 75000)));
+        temp_lim_value.setTextFormatter(new TextFormatter(new IntegerFilter(true, 90, 150)));
+        mot_i_max_value.setTextFormatter(new TextFormatter(new DecimalFilter(true, 1f, 60f)));
+        sens_i_scale_value.setTextFormatter(new TextFormatter(new DecimalFilter(true, 0f, 1000000f)));
         // TODO уточнить границы значений
-        set_rpm_value.setTextFormatter(new TextFormatter(new IntegerFilter().setPositiveOnly(true)/*.setMinValue(0).setMaxValue(1000000)*/));
+        set_rpm_value.setTextFormatter(new TextFormatter(new IntegerFilter()));
     }
 
     /**
@@ -585,11 +585,11 @@ public class MainWindowController {
             if (currentValue.equals(currentBackValue)) return; //---
 
             try {
-                print("%s changing value: '%s' -> '%s'", variableName, currentBackValue, currentValue);
+                System.out.println(format("%s changing value: '%s' -> '%s'", variableName, currentBackValue, currentValue));
 
                 slider.setDisable(true);
                 backendCaller.setValue(variableName, currentValue);
-                print("successfully set value");
+                System.out.println("successfully set value");
             } finally {
                 slider.setDisable(false);
             }
@@ -601,15 +601,13 @@ public class MainWindowController {
             try {
                 Object currentValue = buttonImpl.getValue();
                 String variableName = buttonImpl.getFieldName();
-                Object currentBackValue = getCurrentBackValue(variableName);
-                if (currentValue == null || currentValue.equals(currentBackValue))
-                    return; //---
-                print("%s setting value: %s", variableName, currentValue);
+
+                System.out.println(format("%s setting value: %s", variableName, currentValue));
 
                 buttonImpl.getIndicator().setVisible(true);
                 buttonImpl.getButton().setDisable(true);
                 backendCaller.setValue(variableName, currentValue);
-                print("successfully set value");
+                System.out.println("successfully set value");
             } finally {
                 buttonImpl.getIndicator().setVisible(false);
                 buttonImpl.getButton().setDisable(false);

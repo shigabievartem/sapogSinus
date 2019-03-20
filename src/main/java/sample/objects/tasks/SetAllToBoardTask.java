@@ -24,16 +24,13 @@ public class SetAllToBoardTask extends Task<Void> {
     }
 
 
-    protected Void call() throws Exception {
+    protected Void call() {
         final AtomicInteger i = new AtomicInteger(1);
         buttons.forEach((k, v) -> {
             String fieldName = v.getFieldName();
             setLabel(progressWindowController.getLabel(), "Setting '%s' value", fieldName);
-            Object currentBackValue = currentValues.get(fieldName);
             try {
-                if (currentValues.containsKey(fieldName) && (currentBackValue == null || !currentBackValue.equals(v.getValue())))
-                    BackendCaller.getInstance().setValue(fieldName, v.getValue());
-                Thread.sleep(1000);
+                v.getButton().fire();
             } catch (Exception ex) {
                 print(progressWindowController.getConsole(), "'%s': %s", fieldName, getSimpleErrorMessage(ex));
             } finally {

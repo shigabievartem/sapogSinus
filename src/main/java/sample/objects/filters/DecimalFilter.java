@@ -7,19 +7,34 @@ import static javafx.scene.control.TextFormatter.Change;
  */
 public class DecimalFilter extends NumberFilter {
 
+    public DecimalFilter(boolean positiveOnly, Float minValue, Float maxValue) {
+        super(positiveOnly, minValue, maxValue);
+    }
+
+    public DecimalFilter() {
+        super(false, null, null);
+    }
+
     @Override
     boolean checkValue(Change change) {
         String value = change.getControlNewText();
         if ("".equals(value)) return true;
         if (!isPositiveOnly() && "-".equals(value)) return true;
         try {
-            Float floatValue = Float.parseFloat(change.getControlNewText());
-            if (minValue != null && floatValue < (Float) minValue) return false;
-            if (maxValue != null && floatValue > (Float) maxValue) return false;
+            Float.parseFloat(change.getControlNewText());
             return true;
         } catch (Exception ex) {
             return false;
         }
-//        return change.getControlNewText().matches(isPositiveOnly() ? "(^(\\d+\\.)?\\d*$)" : "(^[-]?(\\d+\\.)?\\d*$)");
+    }
+
+    @Override
+    public Float getMinValue() {
+        return (Float) super.getMinValue();
+    }
+
+    @Override
+    public Float getMaxValue() {
+        return (Float) super.getMaxValue();
     }
 }

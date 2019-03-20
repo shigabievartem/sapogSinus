@@ -155,7 +155,7 @@
                                                             <Label text="esc_index" GridPane.rowIndex="1" />
                                                             <Label text="pwm_enable" GridPane.rowIndex="2" />
                                                             <TextField id="esc_base_value" fx:id="esc_base_value" maxHeight="25.0" maxWidth="80.0" minHeight="25.0" minWidth="80.0" prefHeight="25.0" prefWidth="80.0" stylesheets="@../css/styles.css" GridPane.columnIndex="1" />
-                                                            <TextField id="esc_index_value" fx:id="esc_index_value" maxHeight="25.0" maxWidth="80.0" minHeight="25.0" minWidth="80.0" prefHeight="25.0" prefWidth="80.0" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                                                            <TextField id="esc_index_value" fx:id="esc_index_value" maxHeight="25.0" maxWidth="80.0" minHeight="25.0" minWidth="80.0" prefHeight="25.0" prefWidth="80.0" stylesheets="@../css/styles.css" GridPane.columnIndex="1" GridPane.rowIndex="1" />
                                                             <CheckBox id="pwm_enable_value" fx:id="pwm_enable_value" alignment="CENTER" mnemonicParsing="false" prefHeight="25.0" prefWidth="25.0" selected="true" text="" GridPane.columnIndex="1" GridPane.rowIndex="2">
                                                                <GridPane.margin>
                                                                   <Insets left="35.0" />
@@ -236,9 +236,9 @@
                                                             <Label text="mot_num_poles" />
                                                             <Label text="mot_dc_slope" GridPane.rowIndex="1" />
                                                             <Label text="mot_dc_accel" GridPane.rowIndex="2" />
-                                                            <TextField id="mot_num_poles_value" fx:id="mot_num_poles_value" maxHeight="25.0" maxWidth="80.0" minHeight="25.0" minWidth="80.0" prefHeight="25.0" prefWidth="80.0" GridPane.columnIndex="1" />
-                                                            <TextField id="mot_dc_slope_value" fx:id="mot_dc_slope_value" maxHeight="25.0" maxWidth="80.0" minHeight="25.0" minWidth="80.0" prefHeight="25.0" prefWidth="80.0" GridPane.columnIndex="1" GridPane.rowIndex="1" />
-                                                            <TextField id="mot_dc_accel_value" fx:id="mot_dc_accel_value" maxHeight="25.0" maxWidth="80.0" minHeight="25.0" minWidth="80.0" prefHeight="25.0" prefWidth="80.0" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+                                                            <TextField id="mot_num_poles_value" fx:id="mot_num_poles_value" maxHeight="25.0" maxWidth="80.0" minHeight="25.0" minWidth="80.0" prefHeight="25.0" prefWidth="80.0" stylesheets="@../css/styles.css" GridPane.columnIndex="1" />
+                                                            <TextField id="mot_dc_slope_value" fx:id="mot_dc_slope_value" maxHeight="25.0" maxWidth="80.0" minHeight="25.0" minWidth="80.0" prefHeight="25.0" prefWidth="80.0" stylesheets="@../css/styles.css" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                                                            <TextField id="mot_dc_accel_value" fx:id="mot_dc_accel_value" maxHeight="25.0" maxWidth="80.0" minHeight="25.0" minWidth="80.0" prefHeight="25.0" prefWidth="80.0" stylesheets="@../css/styles.css" GridPane.columnIndex="1" GridPane.rowIndex="2" />
                                                             <HBox spacing="5.0" GridPane.columnIndex="2">
                                                                <children>
                                                                   <Button id="mot_num_poles_button" fx:id="mot_num_poles_button" mnemonicParsing="false" onAction="#setValue" prefHeight="50.0" prefWidth="50.0" text="Set" GridPane.columnIndex="2">
@@ -380,10 +380,10 @@
                                                 <Label text="mot_pwm_hz" />
                                                 <Label text="ctl_dir" GridPane.rowIndex="1" />
                                                 <Label text="temp_lim" GridPane.rowIndex="2" />
-                                                <TextField id="mot_pwm_hz_value" fx:id="mot_pwm_hz_value" maxHeight="25.0" maxWidth="80.0" minHeight="25.0" minWidth="80.0" prefHeight="25.0" prefWidth="80.0" GridPane.columnIndex="1" />
-                                                <TextField id="mot_i_max_value" fx:id="mot_i_max_value" maxHeight="25.0" maxWidth="80.0" minHeight="25.0" minWidth="80.0" prefHeight="25.0" prefWidth="80.0" GridPane.columnIndex="1" GridPane.rowIndex="3" />
-                                                <TextField id="temp_lim_value" fx:id="temp_lim_value" maxHeight="25.0" maxWidth="80.0" minHeight="25.0" minWidth="80.0" prefHeight="25.0" prefWidth="80.0" GridPane.columnIndex="1" GridPane.rowIndex="2" />
-                                                <TextField id="sens_i_scale_value" fx:id="sens_i_scale_value" layoutX="91.0" layoutY="85.0" maxHeight="25.0" maxWidth="80.0" minHeight="25.0" minWidth="80.0" prefHeight="25.0" prefWidth="80.0" GridPane.columnIndex="1" GridPane.rowIndex="4" />
+                                                <TextField id="mot_pwm_hz_value" fx:id="mot_pwm_hz_value" maxHeight="25.0" maxWidth="80.0" minHeight="25.0" minWidth="80.0" prefHeight="25.0" prefWidth="80.0" stylesheets="@../css/styles.css" GridPane.columnIndex="1" />
+                                                <TextField id="mot_i_max_value" fx:id="mot_i_max_value" maxHeight="25.0" maxWidth="80.0" minHeight="25.0" minWidth="80.0" prefHeight="25.0" prefWidth="80.0" stylesheets="@../css/styles.css" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+                                                <TextField id="temp_lim_value" fx:id="temp_lim_value" maxHeight="25.0" maxWidth="80.0" minHeight="25.0" minWidth="80.0" prefHeight="25.0" prefWidth="80.0" stylesheets="@../css/styles.css" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+                                                <TextField id="sens_i_scale_value" fx:id="sens_i_scale_value" layoutX="91.0" layoutY="85.0" maxHeight="25.0" maxWidth="80.0" minHeight="25.0" minWidth="80.0" prefHeight="25.0" prefWidth="80.0" stylesheets="@../css/styles.css" GridPane.columnIndex="1" GridPane.rowIndex="4" />
                                                 <CheckBox id="ctl_dir_value" fx:id="ctl_dir_value" alignment="CENTER" mnemonicParsing="false" prefHeight="25.0" prefWidth="25.0" selected="true" text="" GridPane.columnIndex="1" GridPane.rowIndex="1">
                                                    <GridPane.margin>
                                                       <Insets left="35.0" />
@@ -543,7 +543,7 @@
                                           <HBox spacing="15.0">
                                              <children>
                                                 <Button id="rpm_arm_button" fx:id="rpm_arm_button" mnemonicParsing="false" onAction="#rpmArmAction" prefHeight="30.0" prefWidth="70.0" text="rpm arm" />
-                                                <TextField id="set_rpm_value" fx:id="set_rpm_value" prefHeight="27.0" prefWidth="70.0" />
+                                                <TextField id="set_rpm_value" fx:id="set_rpm_value" prefHeight="27.0" prefWidth="70.0" stylesheets="@../css/styles.css" />
                                                 <Button id="set_rpm_button" fx:id="set_rpm_button" layoutX="10.0" layoutY="10.0" mnemonicParsing="false" onAction="#setValue" prefHeight="30.0" prefWidth="70.0" text="set rpm" />
                                                 <ProgressIndicator id="set_rpm_indicator" fx:id="set_rpm_indicator" maxWidth="17.0" minWidth="17.0" mouseTransparent="true" prefHeight="30.0" prefWidth="17.0" visible="false">
                                                    <HBox.margin>

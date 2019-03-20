@@ -4,22 +4,21 @@ public abstract class NumberFilter extends TextFilter {
 
     private boolean isPositiveOnly = false;
 
-    public NumberFilter setPositiveOnly(boolean positiveOnly) {
-        isPositiveOnly = positiveOnly;
-        return this;
-    }
+    private Number minValue;
+    private Number maxValue;
 
-    Number minValue;
-    Number maxValue;
-
-    public NumberFilter setMinValue(Number minValue) {
+    public NumberFilter(boolean positiveOnly, Number minValue, Number maxValue) {
+        this.isPositiveOnly = positiveOnly;
         this.minValue = minValue;
-        return this;
+        this.maxValue = maxValue;
     }
 
-    public NumberFilter setMaxValue(Number maxValue) {
-        this.maxValue = maxValue;
-        return this;
+    public Number getMinValue() {
+        return minValue;
+    }
+
+    public Number getMaxValue() {
+        return maxValue;
     }
 
     boolean isPositiveOnly() {

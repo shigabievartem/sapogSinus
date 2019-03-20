@@ -19,12 +19,13 @@ public abstract class TextFilter implements UnaryOperator<Change> {
     /**
      * Нужно ли применять стиль к полю
      */
-    private boolean isApplyStyle = false;
+    private boolean isApplyErrorStyle = false;
 
     @Override
     public Change apply(Change change) {
+
         boolean result = checkValue(change);
-        if (isApplyStyle) applyStyle(result, change.getControl().getStyleClass(), errorStyleName); //---
+        applyStyle(result, change.getControl().getStyleClass(), errorStyleName); //---
         return result ? change : null;
     }
 
@@ -32,7 +33,7 @@ public abstract class TextFilter implements UnaryOperator<Change> {
         if (isSuccess) {
             styles.remove(styleName);
         } else if (!styles.contains(styleName)) {
-            styles.add(styleName);
+            if (isApplyErrorStyle) styles.add(styleName);
         }
     }
 
@@ -47,12 +48,12 @@ public abstract class TextFilter implements UnaryOperator<Change> {
         return this;
     }
 
-    public boolean isApplyStyle() {
-        return isApplyStyle;
+    public boolean isApplyErrorStyle() {
+        return isApplyErrorStyle;
     }
 
-    public TextFilter setApplyStyle(boolean applyStyle) {
-        isApplyStyle = applyStyle;
+    public TextFilter setApplyErrorStyle(boolean applyErrorStyle) {
+        isApplyErrorStyle = applyErrorStyle;
         return this;
     }
 }

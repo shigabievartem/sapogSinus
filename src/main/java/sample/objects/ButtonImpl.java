@@ -9,6 +9,7 @@ import java.util.Objects;
 import java.util.function.UnaryOperator;
 
 import static java.lang.String.format;
+import static sample.utils.SapogConst.ERROR_BUTTON_STYLE;
 import static sample.utils.SapogUtils.isBlankOrNull;
 
 public class ButtonImpl {
@@ -53,6 +54,17 @@ public class ButtonImpl {
      * Возвращает значение из поля (визуальное значение)
      */
     public Object getValue() {
+        try {
+            return getValueImpl();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            if (textField != null && !textField.getStyleClass().contains(ERROR_BUTTON_STYLE))
+                textField.getStyleClass().add(ERROR_BUTTON_STYLE);
+            throw ex;
+        }
+    }
+
+    private Object getValueImpl() {
         if (checkBox != null) return checkBox.isSelected(); //---
 
         String currentValue = String.valueOf(textField.getCharacters()).trim();
@@ -61,10 +73,34 @@ public class ButtonImpl {
         if (formatter == null || (filter = formatter.getFilter()) == null) return currentValue; //---
         if (isBlankOrNull(currentValue) || currentValue.equals("-")) return null; //---
 
-        if (DecimalFilter.class == filter.getClass()) return Double.valueOf(currentValue); //---
-        if (IntegerFilter.class == filter.getClass()) return Integer.valueOf(currentValue); //---
+        if (DecimalFilter.class == filter.getClass())
+            return checkFloatValue((DecimalFilter) filter, currentValue); //---
+
+        if (IntegerFilter.class == filter.getClass()) return checkIntValue((IntegerFilter) filter, currentValue); //---
 
         throw new RuntimeException("Unknown value type!");
+    }
+
+    private float checkFloatValue(DecimalFilter filter, String strValue) {
+        Float value = Float.valueOf(strValue);
+        Float maxValue = filter.getMaxValue();
+        Float minValue = filter.getMinValue();
+        if (maxValue != null && value > maxValue)
+            throw new RuntimeException(format("Max value(%s) < Current value(%s)", maxValue, value));
+        if (minValue != null && value < minValue)
+            throw new RuntimeException(format("Min value(%s) > Current value(%s)", minValue, value));
+        return value;
+    }
+
+    private int checkIntValue(IntegerFilter filter, String strValue) {
+        Integer value = Integer.valueOf(strValue);
+        Integer maxValue = filter.getMaxValue();
+        Integer minValue = filter.getMinValue();
+        if (maxValue != null && value > maxValue)
+            throw new RuntimeException(format("Max value(%s) < Current value(%s)", maxValue, value));
+        if (minValue != null && value < minValue)
+            throw new RuntimeException(format("Min value(%s) > Current value(%s)", minValue, value));
+        return value;
     }
 
     public String getFieldName() {
@@ -84,10 +120,6 @@ public class ButtonImpl {
      * Метод устанавливает визуальное значение
      */
     public void setValue(Object currentValue) {
-//        if (checkBox != null && Objects.requireNonNull(currentValue, "Boolean value can not be null") instanceof Boolean) {
-//            checkBox.setSelected((Boolean) currentValue);
-//            return; //---
-//        }
         if (checkBox != null) {
             if (Objects.requireNonNull(currentValue, "Boolean value can not be null") instanceof Boolean) {
                 checkBox.setSelected((Boolean) currentValue);

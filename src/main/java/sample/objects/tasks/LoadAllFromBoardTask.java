@@ -37,7 +37,6 @@ public class LoadAllFromBoardTask extends Task<Void> {
             try {
                 if (currentValues.containsKey(fieldName) && (currentBackValue == null || !currentBackValue.equals(v.getValue())))
                     v.setValue(currentBackValue);
-                Thread.sleep(1000);
             } catch (Exception ex) {
                 print(progressWindowController.getConsole(), "'%s': %s", fieldName, getSimpleErrorMessage(ex));
             } finally {
