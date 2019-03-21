@@ -6,7 +6,6 @@ import org.jetbrains.annotations.NotNull;
 import sample.objects.ConnectionInfo;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -68,17 +67,12 @@ public class BackendCaller {
         }
     }
 
-    public synchronized ConnectionInfo checkConnection(String portNum) {
-        //TODO rewrite
-        if (portNum == null || !connectedPorts.contains(portNum))
-            return NO_CONNECTION; //---
-
-        boolean isConnected = (serial != null) && (serial.getPortState() != SerialState.NOT_OPEN);
-
-        return new ConnectionInfo(isConnected, 12.3, 15.1, 123.3, 321);
+    public synchronized ConnectionInfo checkConnection() {
+        if (serial == null) {
+            return new ConnectionInfo(false, 0.0, 0.0, 0.0, 0);
+        }
+        return  serial.getConnectionInfo();
     }
-
-    private volatile Set<String> connectedPorts = ConcurrentHashMap.newKeySet();
 
     public synchronized void connect(@NotNull String port) throws SerialPortException {
         Objects.requireNonNull(port, "Empty port!");
@@ -88,15 +82,10 @@ public class BackendCaller {
         } else if (serial.isOpened()) {
             //TODO can not open port when it's already open, this is an error?
         }
-
-        //TODO remove this?
-        connectedPorts.add(port);
     }
 
     //TODO remove port as parameter
     public synchronized void disconnect(String port) {
-//        Objects.requireNonNull(port, "Empty port!");
-//        connectedPorts.remove(port);
         if (serial == null) {
             //TODO throw exception
         } else try {
@@ -109,21 +98,9 @@ public class BackendCaller {
     }
 
     public Map<String, Object> getCurrentValues() {
-        Map<String, Object> currentParamMap = new HashMap<>();
-        currentParamMap.put("esc_base", 256);
-        currentParamMap.put("esc_index", 0);
-        currentParamMap.put("pwm_enable", null);
-        currentParamMap.put("mot_num_poles", 14);
-        currentParamMap.put("mot_dc_slope", 5f);
-        currentParamMap.put("mot_dc_accel", 0.09f);
-        currentParamMap.put("mot_pwm_hz", 20000);
-        currentParamMap.put("ctl_dir", false);
-        currentParamMap.put("temp_lim", 100);
-        currentParamMap.put("mot_i_max", 20);
-        currentParamMap.put("sens_i_scale", 1);
-        currentParamMap.put("dc_slider", 0.5d);
-        currentParamMap.put("set_rpm", 99);
-        return currentParamMap;
+        if (serial != null)
+            return serial.getCurrentParamMap();
+        return null;
     }
 
     public String sendCommand(String text) {

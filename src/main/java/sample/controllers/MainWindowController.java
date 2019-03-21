@@ -199,6 +199,7 @@ public class MainWindowController {
      * Частота считывания значения слайдера
      */
     private final long sliderFrequency = 2 * 1000;
+    private Double lastSliderValue = 0.0;
 
     /**
      * Частота проверки соединения
@@ -359,7 +360,7 @@ public class MainWindowController {
         }
     };
 
-    private final Supplier<ConnectionInfo> checkConnectionAction = () -> backendCaller.checkConnection(getPort());
+    private final Supplier<ConnectionInfo> checkConnectionAction = () -> backendCaller.checkConnection();
 
 
     private final Timer updateConnectionStatusTimer = new Timer();
@@ -581,15 +582,20 @@ public class MainWindowController {
             Double currentValue = roundDoubleValue(slider.getValue());
             String variableName = slider.getId();
 
-            Double currentBackValue = (Double) getCurrentBackValue(variableName);
-            if (currentValue.equals(currentBackValue)) return; //---
+            //Double currentBackValue = (Double) getCurrentBackValue(variableName);
+            //if (currentValue.equals(currentBackValue)) return; //---
+
 
             try {
-                System.out.println(format("%s changing value: '%s' -> '%s'", variableName, currentBackValue, currentValue));
+                System.out.println(format("%s changing value: '%s' -> '%s'", variableName, 0, currentValue));
 
                 slider.setDisable(true);
-                backendCaller.setValue(variableName, currentValue);
-                System.out.println("successfully set value");
+                //backendCaller.setValue(variableName, currentValue);
+                if (lastSliderValue == currentValue) {
+                    backendCaller.sendCommand(format("dc %.2f", currentValue));
+                    lastSliderValue = currentValue;
+                    System.out.println("successfully set value");
+                }
             } finally {
                 slider.setDisable(false);
             }
