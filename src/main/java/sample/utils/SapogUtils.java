@@ -120,11 +120,11 @@ public class SapogUtils {
     }
 
     /**
-     * Метод преобрзует число до первого десятичного знака
-     * вид на выходе: #0.0
+     * Метод преобрзует число до второго десятичного знака
+     * вид на выходе: #0.01
      */
     public static double roundDoubleValue(double floatValue) {
-        return ((double) Math.round(floatValue * 10) / 10);
+        return ((double) Math.round(floatValue * 100) / 100);
     }
 
 

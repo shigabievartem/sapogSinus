@@ -515,7 +515,7 @@
                                           <HBox spacing="10.0">
                                              <children>
                                                 <Button id="dc_arm_button" fx:id="dc_arm_button" mnemonicParsing="false" onAction="#dcArmAction" prefHeight="30.0" prefWidth="70.0" text="dc arm" />
-                                                <Slider id="dc_slider" fx:id="dc_slider" blockIncrement="0.1" majorTickUnit="0.1" max="1.0" minorTickCount="0" prefHeight="50.0" prefWidth="350.0" showTickLabels="true" showTickMarks="true" snapToTicks="true">
+                                                <Slider id="dc_slider" fx:id="dc_slider" blockIncrement="0.01" majorTickUnit="0.1" max="1.0" minorTickCount="10" prefHeight="50.0" prefWidth="350.0" showTickLabels="true" showTickMarks="true" snapToTicks="true">
                                                    <padding>
                                                       <Insets bottom="5.0" top="5.0" />
                                                    </padding>

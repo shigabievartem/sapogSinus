@@ -47,9 +47,6 @@ public class BackendCaller {
     }
 
     public synchronized Object getCurrentValue(String fieldName) {
-        if ("dc_slider".equalsIgnoreCase(fieldName)) {
-            return 0.5d;
-        }
         return "";
     }
 
@@ -57,9 +54,9 @@ public class BackendCaller {
         System.out.println(format("Received new value '%s' for field '%s'", value, fieldName));
     }
 
-    public synchronized ConnectionInfo checkConnection(String portNum) {
-        if (portNum == null || !connectedPorts.contains(portNum))
-            return NO_CONNECTION; //---
+    public synchronized ConnectionInfo checkConnection() {
+        System.out.println(connectedPorts);
+        if (connectedPorts.isEmpty()) return NO_CONNECTION; //---
 
         return new ConnectionInfo(true, 12.3, 15.1, 123.3, 321);
     }
@@ -97,5 +94,9 @@ public class BackendCaller {
     public String sendCommand(String text) {
         System.out.println(format("back receive command '%s'", text));
         return format("command '%s' successfully processed", text);
+    }
+
+    public void closeMainWindow() {
+        System.out.println("Main window closed, back know about it!");
     }
 }

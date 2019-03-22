@@ -2,11 +2,9 @@ package sample.controllers;
 
 import com.sun.istack.internal.NotNull;
 import javafx.beans.value.ChangeListener;
-import javafx.collections.FXCollections;
 import javafx.event.ActionEvent;
 import javafx.event.Event;
 import javafx.event.EventHandler;
-import javafx.event.EventTarget;
 import javafx.fxml.FXML;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
@@ -14,6 +12,7 @@ import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
+import javafx.stage.Stage;
 import jssc.SerialPortException;
 import sample.objects.ButtonImpl;
 import sample.objects.ConnectionInfo;
@@ -21,6 +20,7 @@ import sample.objects.filters.DecimalFilter;
 import sample.objects.filters.IntegerFilter;
 import sample.objects.tasks.LoadAllFromBoardTask;
 import sample.objects.tasks.SetAllToBoardTask;
+import sample.objects.tasks.UpdateConnectionStatusTimer;
 import sample.utils.BackendCaller;
 import sample.utils.SapogUtils;
 
@@ -222,6 +222,9 @@ public class MainWindowController {
         // Обработаем событие потери соединения
         mainElement.sceneProperty().addListener(lostConnectionListener);
 
+        // Обработаем событие закрытия основного окна
+        mainElement.sceneProperty().addListener(closeWindowListener);
+
         backendCaller.setMainConsole(setup_console);
     }
 
@@ -321,6 +324,16 @@ public class MainWindowController {
         runSaveAction(() -> CompletableFuture.runAsync(loadDefaultConfigAction).exceptionally(defaultExceptionHandler));
     }
 
+
+    private Consumer<ButtonImpl> setButtonAction = (buttonImpl) -> {
+        Object currentValue = buttonImpl.getValue();
+        String variableName = buttonImpl.getFieldName();
+
+        System.out.println(format("%s setting value: %s", variableName, currentValue));
+        backendCaller.setValue(variableName, currentValue);
+    };
+    private Consumer<ButtonImpl> setRpmButtonAction = (buttonImpl) -> backendCaller.sendCommand(format("arm %d", buttonImpl.getValue()));
+
     /**
      * Обработчик нажатия на кнопку "Установить значение"
      */
@@ -333,8 +346,12 @@ public class MainWindowController {
                 return; //---
             }
 
-            EventTarget target = Objects.requireNonNull(event.getTarget(), "Target element cannot be empty!");
-            if (target instanceof Button) setButtonValueImpl(buttons.get(((Button) event.getTarget()).getId()));
+            Button target = (Button) Objects.requireNonNull(event.getTarget(), "Target element cannot be empty!");
+
+            boolean isSetRpmButton = target == set_rpm_button;
+            if (isSetRpmButton && isBlankOrNull((rpm_info.getText()))) return; //---
+
+            setButtonValueImpl(buttons.get(target.getId()), isSetRpmButton ? setRpmButtonAction : setButtonAction);
         });
     }
 
@@ -360,35 +377,52 @@ public class MainWindowController {
         }
     };
 
-    private final Supplier<ConnectionInfo> checkConnectionAction = () -> backendCaller.checkConnection();
-
-
-    private final Timer updateConnectionStatusTimer = new Timer();
-    private final TimerTask updateConnectionStatusTask = new TimerTask() {
-        @Override
-        public void run() {
-            ConnectionInfo info;
-            try {
-                info = CompletableFuture.supplyAsync(checkConnectionAction).exceptionally(CheckConnectionExceptionHandler).get(defaultTimeOut, SECONDS);
-            } catch (InterruptedException | ExecutionException | TimeoutException e) {
-                e.printStackTrace();
-                printError(e);
-                info = NO_CONNECTION;
-            }
-
-            if (!info.isConnected()) {
-                mainElement.fireEvent(new Event(connectionLost));
-                print("Connection lost...");
-            }
-
-            updateConnectionInfo.accept(info);
+    private final ChangeListener<? super Scene> closeWindowListener = (observable, oldScene, newScene) -> {
+        if (oldScene == null && newScene != null) {
+            newScene.windowProperty().addListener((observableWindow, oldWindow, newWindow) -> {
+                if (oldWindow == null && newWindow != null) {
+                    newWindow.setOnCloseRequest((windowEvent) -> {
+                        backendCaller.closeMainWindow();
+                        ((Stage) windowEvent.getTarget()).close();
+                    });
+                }
+            });
         }
     };
+
+    private final Supplier<ConnectionInfo> checkConnectionAction = backendCaller::checkConnection;
+
+
+    private final UpdateConnectionStatusTimer updateConnectionStatusTimer = new UpdateConnectionStatusTimer();
+
+    private TimerTask getUpdateConnectionStatusTask() {
+        return new TimerTask() {
+            @Override
+            public void run() {
+                ConnectionInfo info;
+                try {
+                    System.out.println("task started!");
+                    info = CompletableFuture.supplyAsync(checkConnectionAction).exceptionally(CheckConnectionExceptionHandler).get(defaultTimeOut, SECONDS);
+                } catch (InterruptedException | ExecutionException | TimeoutException e) {
+                    e.printStackTrace();
+                    printError(e);
+                    info = NO_CONNECTION;
+                }
+
+                if (!info.isConnected()) {
+                    mainElement.fireEvent(new Event(connectionLost));
+                    print("Connection lost...");
+                }
+
+                updateConnectionInfo.accept(info);
+            }
+        };
+    }
 
     private final Consumer<ConnectionInfo> updateConnectionInfo = info -> {
         updateStatusBar(info);
         recalculateButtonsAvailability(info.isConnected());
-        if (!info.isConnected()) updateConnectionStatusTimer.cancel();
+        if (!info.isConnected()) updateConnectionStatusTimer.stop();
     };
 
     private final Runnable connectAction = () -> {
@@ -409,7 +443,6 @@ public class MainWindowController {
     };
 
     private final Consumer<String> sendCommandAction = text -> {
-        print(text);
         String serverAnswer;
         try {
             serverAnswer = CompletableFuture.supplyAsync(() -> backendCaller.sendCommand(text)).exceptionally((e) -> {
@@ -440,6 +473,7 @@ public class MainWindowController {
         if (exception != null) {
             defaultExceptionHandler.apply(exception);
         } else {
+            System.out.println("update connection status");
             updateConnectionStatusAction.run();
         }
         return null;
@@ -546,15 +580,13 @@ public class MainWindowController {
         temp_lim_value.setTextFormatter(new TextFormatter(new IntegerFilter(true, 90, 150)));
         mot_i_max_value.setTextFormatter(new TextFormatter(new DecimalFilter(true, 1f, 60f)));
         sens_i_scale_value.setTextFormatter(new TextFormatter(new DecimalFilter(true, 0f, 1000000f)));
-        // TODO уточнить границы значений
-        set_rpm_value.setTextFormatter(new TextFormatter(new IntegerFilter()));
+        set_rpm_value.setTextFormatter(new TextFormatter(new IntegerFilter(true, 900, 5000)));
     }
 
     /**
      * Соберем все кнопки с изменяемым значением в одну кололекцию
      */
     private void initializeButtons() {
-        port_button.setItems(FXCollections.observableArrayList("por1", "qwe/rty"));
         if (!port_button.getItems().isEmpty()) port_button.getSelectionModel().selectFirst();
 
         buttons = new ConcurrentHashMap<>();
@@ -580,39 +612,29 @@ public class MainWindowController {
             if (isBlankOrNull((dc_info.getText()))) return; //---
 
             Double currentValue = roundDoubleValue(slider.getValue());
+            if (lastSliderValue != null && lastSliderValue.equals(currentValue)) return; //---
+
             String variableName = slider.getId();
 
-            //Double currentBackValue = (Double) getCurrentBackValue(variableName);
-            //if (currentValue.equals(currentBackValue)) return; //---
-
-
             try {
-                System.out.println(format("%s changing value: '%s' -> '%s'", variableName, 0, currentValue));
+                System.out.println(format("%s changing value: '%s' -> '%s'", variableName, lastSliderValue, currentValue));
 
                 slider.setDisable(true);
-                //backendCaller.setValue(variableName, currentValue);
-                if (lastSliderValue == currentValue) {
-                    backendCaller.sendCommand(format("dc %.2f", currentValue));
-                    lastSliderValue = currentValue;
-                    System.out.println("successfully set value");
-                }
+                backendCaller.sendCommand(format("dc %.2f", currentValue));
+                lastSliderValue = currentValue;
+                System.out.println("successfully set value");
             } finally {
                 slider.setDisable(false);
             }
         }).exceptionally(defaultExceptionHandler);
     }
 
-    private void setButtonValueImpl(ButtonImpl buttonImpl) {
+    private void setButtonValueImpl(ButtonImpl buttonImpl, Consumer<ButtonImpl> setButtonValueAction) {
         CompletableFuture.runAsync(() -> {
             try {
-                Object currentValue = buttonImpl.getValue();
-                String variableName = buttonImpl.getFieldName();
-
-                System.out.println(format("%s setting value: %s", variableName, currentValue));
-
                 buttonImpl.getIndicator().setVisible(true);
                 buttonImpl.getButton().setDisable(true);
-                backendCaller.setValue(variableName, currentValue);
+                setButtonValueAction.accept(buttonImpl);
                 System.out.println("successfully set value");
             } finally {
                 buttonImpl.getIndicator().setVisible(false);
@@ -653,7 +675,7 @@ public class MainWindowController {
      * Метод проверяет коннект, в случае разрыва коннекта открывается модальное окно с оповещением
      */
     private void updateConnectionStatus() {
-        CompletableFuture.runAsync(() -> updateConnectionStatusTimer.scheduleAtFixedRate(updateConnectionStatusTask, 0, checkConnectionFrequency));
+        CompletableFuture.runAsync(() -> updateConnectionStatusTimer.start(getUpdateConnectionStatusTask(), 0, checkConnectionFrequency));
     }
 
     /**

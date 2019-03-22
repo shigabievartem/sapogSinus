@@ -8,8 +8,6 @@ import sample.objects.ConnectionInfo;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 import static java.lang.String.format;
 import static sample.utils.SapogConst.NO_CONNECTION;
@@ -69,9 +67,9 @@ public class BackendCaller {
 
     public synchronized ConnectionInfo checkConnection() {
         if (serial == null) {
-            return new ConnectionInfo(false, 0.0, 0.0, 0.0, 0);
+            return NO_CONNECTION;
         }
-        return  serial.getConnectionInfo();
+        return serial.getConnectionInfo();
     }
 
     public synchronized void connect(@NotNull String port) throws SerialPortException {
@@ -91,7 +89,7 @@ public class BackendCaller {
         } else try {
             serial.close();
             serial = null;
-            System.out.println(format("Port closed"));
+            System.out.println("Port closed");
         } catch (IOException e) {
             //TODO re-throw up
         }
@@ -109,6 +107,12 @@ public class BackendCaller {
         } catch (SerialPortException | IOException e) {
             return e.toString();
         }
-        return format("", text);
+        return "";
+    }
+
+    public void closeMainWindow() {
+        //TODO доработать необходимую логику
+        System.out.println("Main window closed, back know about it!");
+
     }
 }
