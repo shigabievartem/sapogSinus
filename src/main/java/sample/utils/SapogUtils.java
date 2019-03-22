@@ -87,7 +87,7 @@ public class SapogUtils {
                         stage.initOwner(window);
                         if (actionWithController != null) actionWithController.accept(loader.getController());
                         stage.show();
-                    } catch (IOException e) {
+                    } catch (Exception e) {
                         e.printStackTrace();
                     }
                 }
@@ -108,7 +108,7 @@ public class SapogUtils {
             alert.initOwner(window);
             alert.setContentText(contentText);
 
-            if (buttons != null) {
+            if (buttons != null && buttons.length != 0) {
                 alert.getButtonTypes().clear();
                 Stream.of(buttons).forEachOrdered(alert.getButtonTypes()::add);
             }

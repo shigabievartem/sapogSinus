@@ -101,6 +101,11 @@ public class BackendCaller {
         return null;
     }
 
+    /***
+     * Метод отправки команды
+     * @param text - команда отправленная из консоли
+     * @return - ответ, который будет распечатан в консоли. Если строка пустая или null в консоль ничего не попадёт
+     */
     public String sendCommand(String text) {
         try {
             serial.sendString(text);

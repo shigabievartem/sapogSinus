@@ -408,11 +408,9 @@ public class MainWindowController {
             public void run() {
                 ConnectionInfo info;
                 try {
-                    System.out.println("task started!");
                     info = CompletableFuture.supplyAsync(checkConnectionAction).exceptionally(CheckConnectionExceptionHandler).get(defaultTimeOut, SECONDS);
                 } catch (InterruptedException | ExecutionException | TimeoutException e) {
                     e.printStackTrace();
-                    printError(e);
                     info = NO_CONNECTION;
                 }
 
@@ -452,12 +450,11 @@ public class MainWindowController {
         String serverAnswer;
         try {
             serverAnswer = CompletableFuture.supplyAsync(() -> backendCaller.sendCommand(text)).exceptionally((e) -> {
-                printError(e);
+                e.printStackTrace();
                 return null;
             }).get(defaultTimeOut, SECONDS);
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
             e.printStackTrace();
-            printError(e);
             serverAnswer = null;
         }
         if (!isBlankOrNull(serverAnswer)) print(serverAnswer);
@@ -492,16 +489,6 @@ public class MainWindowController {
         CompletableFuture.runAsync(task).thenRun(() -> setLabel(c.getLabel(), "All parameters set to board."));
     };
 
-    private final Consumer<File> loadConfigFromFileActionConsumer = f -> {
-        Properties props = parsePropertiesFile(f);
-        buttons.forEach((k, v) -> {
-            String configValue = props.getProperty(v.getFieldName());
-
-            if (!isBlankOrNull(configValue)) v.setValue(configValue);
-            else System.out.println(format("No value for field '%s'...", k));
-        });
-    };
-
     private final Consumer<File> saveConfigToFileActionConsumer = f -> savePropertiesToFile(prepareCurrentValuesConfig(), f);
 
     private final Consumer<Window> loadAllFromBoardAction = window -> showModalWindow("Loading parameters...", progressWindowConfigLocation,
@@ -513,12 +500,10 @@ public class MainWindowController {
     private final Consumer<ActionEvent> saveConfigToFileAction = event -> showFileDialog(true,
             ((Button) event.getTarget()).getScene().getWindow(), saveConfigToFileActionConsumer);
 
-    private final Consumer<ActionEvent> loadConfigFromFileAction = event -> showFileDialog(false,
-            ((Button) event.getTarget()).getScene().getWindow(), loadConfigFromFileActionConsumer);
-
     private final Consumer<File> parsePropertiesFromFile = file -> {
         Properties props = parsePropertiesFile(file);
         buttons.forEach((k, v) -> {
+            if (k.equalsIgnoreCase(set_rpm_button.getId())) return; //---
             String configValue = props.getProperty(v.getFieldName());
 
             if (!isBlankOrNull(configValue)) v.setValue(configValue);
@@ -526,11 +511,13 @@ public class MainWindowController {
         });
     };
 
+    private final Consumer<ActionEvent> loadConfigFromFileAction = event -> showFileDialog(false,
+            ((Button) event.getTarget()).getScene().getWindow(), parsePropertiesFromFile);
+
     private final BiFunction<Void, Throwable, Void> connectionHandler = (voidValue, exception) -> {
         if (exception != null) {
-            SapogUtils.alert(mainElement.getScene().getWindow(), ERROR, "Connection error", null, getSimpleErrorMessage(exception), null, null);
+            SapogUtils.alert(mainElement.getScene().getWindow(), ERROR, "Connection error", null, getSimpleErrorMessage(exception), null);
         } else {
-            System.out.println("update connection status");
             updateConnectionStatusAction.run();
 
             CompletableFuture.runAsync(() -> loadAllFromBoardAction.accept(
@@ -661,7 +648,7 @@ public class MainWindowController {
         try {
             port = port_button.getValue();
         } catch (Exception ex) {
-            printError(ex);
+            ex.printStackTrace();
         }
         return port;
     }
