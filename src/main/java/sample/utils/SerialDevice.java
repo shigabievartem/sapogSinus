@@ -84,17 +84,33 @@ public class SerialDevice {
 
         currentParamMap.put("esc_base", 256);
         currentParamMap.put("esc_index", 0);
-        currentParamMap.put("pwm_enable", false);
+        currentParamMap.put("pwm_enable", 0);
         currentParamMap.put("mot_num_poles", 14);
         currentParamMap.put("mot_dc_slope", 5f);
         currentParamMap.put("mot_dc_accel", 0.09f);
         currentParamMap.put("mot_pwm_hz", 20000);
-        currentParamMap.put("ctl_dir", false);
+        currentParamMap.put("ctl_dir", 0);
         currentParamMap.put("temp_lim", 100);
         currentParamMap.put("mot_i_max", 20);
         currentParamMap.put("sens_i_scale", 1);
         currentParamMap.put("dc_slider", 0.5f);
         currentParamMap.put("set_rpm", 99);
+        currentParamMap.put("uavcan_node_id", 0);
+        currentParamMap.put("cmd_ttl_ms", 200);
+        currentParamMap.put("pwm_max_usec", 2000);
+        currentParamMap.put("pwm_min_usec", 1000);
+        currentParamMap.put("mot_pwm_blank", 0.500000);
+        currentParamMap.put("mot_pwm_dt_ns", 600);
+        currentParamMap.put("mot_zc_fails_max", 100);
+        currentParamMap.put("rpmctl_i", 0.001000);
+        currentParamMap.put("rpmctl_d", 0.000000);
+        currentParamMap.put("rpmctl_p", 0.000100);
+        currentParamMap.put("mot_stop_thres", 7);
+        currentParamMap.put("mot_lpf_freq", 20.000000);
+        currentParamMap.put("mot_rpm_min", 1000);
+        currentParamMap.put("mot_spup_vramp_t", 3.000000);
+        currentParamMap.put("mot_v_spinup", 0.500000);
+        currentParamMap.put("mot_v_min", 2.500000);
 
         tryReopen();
     }
@@ -121,18 +137,22 @@ public class SerialDevice {
                 try {
                     if ((buffer = port.readBytes()) != null) {
                         for (byte b : buffer) {
-                            message.append((char) b);
+                            //message.append((char) b);
                             lastLine.append((char) b);
                             if (b == '\n') {
                                 if (!tryExtractStat2(lastLine.toString())) {
-                                    if (!tryExtractParam(lastLine.toString()))
-                                    tryExtractVersion(lastLine.toString());
+                                    if (!tryExtractParam(lastLine.toString())) {
+                                        if (!tryExtractVersion(lastLine.toString())){
+                                            if (!tryExtractCommand(lastLine.toString())) {
+                                                logToConsole(lastLine.toString().getBytes());
+                                            }
+                                        }
+                                    }
                                 }
+                                //message.setLength(0);
                                 lastLine.setLength(0);
                             }
                         }
-                        logToConsole(message.toString().getBytes());
-                        message.setLength(0);
                     }
                 } catch (SerialPortException e) {
                     //logToConsole(e.toString().getBytes());
@@ -143,6 +163,15 @@ public class SerialDevice {
         }
     };
 
+    private boolean tryExtractCommand(String s) {
+        if (
+                    (s.indexOf("ch2> stat2\r\n") == 0) ||
+                    (s.indexOf("ch2> cfg list\r\n") == 0)
+        ) {
+            return true;
+        }
+        return false;
+    }
 
     private boolean tryExtractVersion(String s) {
         int idxKey = s.indexOf("io.px4.sapog");
