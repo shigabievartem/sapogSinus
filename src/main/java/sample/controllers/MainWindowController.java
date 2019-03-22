@@ -39,6 +39,7 @@ import java.util.function.Supplier;
 
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static javafx.scene.control.Alert.AlertType.ERROR;
 import static sample.utils.SapogConst.Events.connectionLost;
 import static sample.utils.SapogConst.NO_CONNECTION;
 import static sample.utils.SapogConst.WindowConfigLocations.defaultConfig;
@@ -234,7 +235,7 @@ public class MainWindowController {
      */
     @FXML
     public void connect(ActionEvent event) {
-        runSaveAction(() -> CompletableFuture.runAsync(connectAction).handle(connectionHandler).exceptionally(defaultExceptionHandler));
+        runSaveAction(() -> CompletableFuture.runAsync(connectAction).handle(connectionHandler));
     }
 
     /**
@@ -412,7 +413,6 @@ public class MainWindowController {
 
                 if (!info.isConnected()) {
                     mainElement.fireEvent(new Event(connectionLost));
-                    print("Connection lost...");
                 }
 
                 updateConnectionInfo.accept(info);
@@ -433,6 +433,7 @@ public class MainWindowController {
             backendCaller.connect(currentPort);
             print("Successfully connected to port: '%s'", getPort());
         } catch (IOException e) {
+            System.out.println(format("Successfully connected to port: '%s'", getPort()));
             e.printStackTrace();
             throw new RuntimeException(e);
         }
@@ -440,7 +441,7 @@ public class MainWindowController {
     private final Runnable disconnectAction = () -> {
         updateConnectionInfo.accept(NO_CONNECTION);
         backendCaller.disconnect(getPort());
-        print("Controller manually disconnected from port '%s'", getPort());
+        System.out.println(format("Controller manually disconnected from port '%s'", getPort()));
     };
 
     private final Consumer<String> sendCommandAction = text -> {
@@ -472,7 +473,7 @@ public class MainWindowController {
 
     private final BiFunction<Void, Throwable, Void> connectionHandler = (voidValue, exception) -> {
         if (exception != null) {
-            defaultExceptionHandler.apply(exception);
+            SapogUtils.alert(mainElement.getScene().getWindow(), ERROR, "Connection error", null, getSimpleErrorMessage(exception), null, null);
         } else {
             System.out.println("update connection status");
             updateConnectionStatusAction.run();
@@ -663,6 +664,8 @@ public class MainWindowController {
         dc_info.setText(isBlankOrNull(info.getDc()) ? "" : format("%s DC", info.getDc()));
         rpm_info.setText(isBlankOrNull(info.getRpm()) ? "" : format("%s RPM", info.getRpm()));
         connection_indicator.setFill(info.isConnected() ? Color.valueOf("2c9a24") : Color.RED);
+        //TODO допилить добавление версии
+        info.getVersion();
     };
 
     /**

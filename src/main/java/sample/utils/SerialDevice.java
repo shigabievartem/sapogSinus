@@ -121,7 +121,10 @@ public class SerialDevice {
                 voltage,
                 current,
                 DC,
-                RPM);
+                RPM,
+                //TODO добавить версию
+                "version"
+                );
     }
 
     Runnable serialReader = new Runnable() {
