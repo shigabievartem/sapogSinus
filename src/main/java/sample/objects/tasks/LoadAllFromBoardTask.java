@@ -33,10 +33,8 @@ public class LoadAllFromBoardTask extends Task<Void> {
         buttons.forEach((k, v) -> {
             String fieldName = v.getFieldName();
             setLabel(progressWindowController.getLabel(), "Setting '%s' value", fieldName);
-            Object currentBackValue = currentValues.get(fieldName);
             try {
-                if (currentValues.containsKey(fieldName) && (currentBackValue == null || !currentBackValue.equals(v.getValue())))
-                    v.setValue(currentBackValue);
+                v.setValue(currentValues.get(fieldName));
             } catch (Exception ex) {
                 print(progressWindowController.getConsole(), "'%s': %s", fieldName, getSimpleErrorMessage(ex));
             } finally {

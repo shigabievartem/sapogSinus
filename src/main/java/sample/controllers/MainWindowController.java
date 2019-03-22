@@ -13,6 +13,7 @@ import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import javafx.stage.Stage;
+import javafx.stage.Window;
 import jssc.SerialPortException;
 import sample.objects.ButtonImpl;
 import sample.objects.ConnectionInfo;
@@ -234,7 +235,7 @@ public class MainWindowController {
      */
     @FXML
     public void connect(ActionEvent event) {
-        runSaveAction(() -> CompletableFuture.runAsync(connectAction).handle(connectionHandler));
+        CompletableFuture.runAsync(connectAction).handle(connectionHandler);
     }
 
     /**
@@ -242,7 +243,7 @@ public class MainWindowController {
      */
     @FXML
     public void disconnect(ActionEvent event) {
-        runSaveAction(() -> CompletableFuture.runAsync(disconnectAction).exceptionally(defaultExceptionHandler));
+        CompletableFuture.runAsync(disconnectAction).exceptionally(defaultExceptionHandler);
     }
 
     /**
@@ -250,7 +251,7 @@ public class MainWindowController {
      */
     @FXML
     public void reboot(ActionEvent event) {
-        runSaveAction(() -> CompletableFuture.runAsync(rebootAction).exceptionally(defaultExceptionHandler));
+        CompletableFuture.runAsync(rebootAction).exceptionally(defaultExceptionHandler);
     }
 
     /**
@@ -258,7 +259,7 @@ public class MainWindowController {
      */
     @FXML
     public void boot(ActionEvent event) {
-        runSaveAction(() -> CompletableFuture.runAsync(bootAction).exceptionally(defaultExceptionHandler));
+        CompletableFuture.runAsync(bootAction).exceptionally(defaultExceptionHandler);
     }
 
     /**
@@ -266,7 +267,7 @@ public class MainWindowController {
      */
     @FXML
     public void beep(ActionEvent event) {
-        runSaveAction(() -> CompletableFuture.runAsync(beepAction).exceptionally(defaultExceptionHandler));
+        CompletableFuture.runAsync(beepAction).exceptionally(defaultExceptionHandler);
     }
 
     /**
@@ -274,7 +275,7 @@ public class MainWindowController {
      */
     @FXML
     public void dcArmAction(ActionEvent event) {
-        runSaveAction(() -> CompletableFuture.runAsync(dcArmAction).exceptionally(defaultExceptionHandler));
+        CompletableFuture.runAsync(dcArmAction).exceptionally(defaultExceptionHandler);
     }
 
     /**
@@ -282,7 +283,7 @@ public class MainWindowController {
      */
     @FXML
     public void rpmArmAction(ActionEvent event) {
-        runSaveAction(() -> CompletableFuture.runAsync(rpmArmAction).exceptionally(defaultExceptionHandler));
+        CompletableFuture.runAsync(rpmArmAction).exceptionally(defaultExceptionHandler);
     }
 
     /**
@@ -290,7 +291,7 @@ public class MainWindowController {
      */
     @FXML
     public void loadAllFromBoard(ActionEvent event) {
-        runSaveAction(() -> CompletableFuture.runAsync(() -> loadAllFromBoardAction.accept(event)).exceptionally(defaultExceptionHandler));
+        loadAllFromBoardImpl(((Button) event.getTarget()).getScene().getWindow());
     }
 
     /**
@@ -298,7 +299,7 @@ public class MainWindowController {
      */
     @FXML
     public void setAllToBoard(ActionEvent event) {
-        runSaveAction(() -> CompletableFuture.runAsync(() -> setAllToBoardAction.accept(event)).exceptionally(defaultExceptionHandler));
+        CompletableFuture.runAsync(() -> setAllToBoardAction.accept(event)).exceptionally(defaultExceptionHandler);
     }
 
     /**
@@ -306,7 +307,7 @@ public class MainWindowController {
      */
     @FXML
     public void saveConfigToFile(ActionEvent event) {
-        runSaveAction(() -> CompletableFuture.runAsync(() -> saveConfigToFileAction.accept(event)).exceptionally(defaultExceptionHandler));
+        CompletableFuture.runAsync(() -> saveConfigToFileAction.accept(event)).exceptionally(defaultExceptionHandler);
     }
 
     /**
@@ -314,7 +315,7 @@ public class MainWindowController {
      */
     @FXML
     public void loadConfigFromFile(ActionEvent event) {
-        runSaveAction(() -> CompletableFuture.runAsync(() -> loadConfigFromFileAction.accept(event)).exceptionally(defaultExceptionHandler));
+        CompletableFuture.runAsync(() -> loadConfigFromFileAction.accept(event)).exceptionally(defaultExceptionHandler);
     }
 
     /**
@@ -322,7 +323,7 @@ public class MainWindowController {
      */
     @FXML
     public void loadDefaultConfig(ActionEvent event) {
-        runSaveAction(() -> CompletableFuture.runAsync(loadDefaultConfigAction).exceptionally(defaultExceptionHandler));
+        CompletableFuture.runAsync(loadDefaultConfigAction).exceptionally(defaultExceptionHandler);
     }
 
 
@@ -333,27 +334,29 @@ public class MainWindowController {
         System.out.println(format("%s setting value: %s", variableName, currentValue));
         backendCaller.setValue(variableName, currentValue);
     };
-    private Consumer<ButtonImpl> setRpmButtonAction = (buttonImpl) -> backendCaller.sendCommand(format("arm %d", buttonImpl.getValue()));
+    private Consumer<ButtonImpl> setRpmButtonAction = (buttonImpl) -> backendCaller.sendCommand(format("rpm %d", (Integer) buttonImpl.getValue()));
+
+    private final Consumer<ActionEvent> setValueAction = (event -> {
+        Objects.requireNonNull(event, "Empty event!");
+        if (event.getTarget() == null || event.getTarget().getClass() != Button.class) {
+            System.out.println("Bad button");
+            return; //---
+        }
+
+        Button target = (Button) Objects.requireNonNull(event.getTarget(), "Target element cannot be empty!");
+
+        boolean isSetRpmButton = target == set_rpm_button;
+        if (isSetRpmButton && isBlankOrNull((rpm_info.getText()))) return; //---
+
+        setButtonValueImpl(buttons.get(target.getId()), isSetRpmButton ? setRpmButtonAction : setButtonAction);
+    });
 
     /**
      * Обработчик нажатия на кнопку "Установить значение"
      */
     @FXML
     public void setValue(ActionEvent event) {
-        runSaveAction(() -> {
-            Objects.requireNonNull(event, "Empty event!");
-            if (event.getTarget() == null || event.getTarget().getClass() != Button.class) {
-                System.out.println("Bad button");
-                return; //---
-            }
-
-            Button target = (Button) Objects.requireNonNull(event.getTarget(), "Target element cannot be empty!");
-
-            boolean isSetRpmButton = target == set_rpm_button;
-            if (isSetRpmButton && isBlankOrNull((rpm_info.getText()))) return; //---
-
-            setButtonValueImpl(buttons.get(target.getId()), isSetRpmButton ? setRpmButtonAction : setButtonAction);
-        });
+        CompletableFuture.runAsync(() -> setValueAction.accept(event)).exceptionally(defaultExceptionHandler);
     }
 
     private final EventHandler<Event> connectionLostEventHandler = (conLostEvent) -> {
@@ -378,12 +381,18 @@ public class MainWindowController {
         }
     };
 
+    private final UpdateConnectionStatusTimer updateConnectionStatusTimer = new UpdateConnectionStatusTimer();
+
+    private final Timer dcValueReader = new Timer();
+
     private final ChangeListener<? super Scene> closeWindowListener = (observable, oldScene, newScene) -> {
         if (oldScene == null && newScene != null) {
             newScene.windowProperty().addListener((observableWindow, oldWindow, newWindow) -> {
                 if (oldWindow == null && newWindow != null) {
                     newWindow.setOnCloseRequest((windowEvent) -> {
                         backendCaller.closeMainWindow();
+                        updateConnectionStatusTimer.stopTimer();
+                        dcValueReader.cancel();
                         ((Stage) windowEvent.getTarget()).close();
                     });
                 }
@@ -392,9 +401,6 @@ public class MainWindowController {
     };
 
     private final Supplier<ConnectionInfo> checkConnectionAction = backendCaller::checkConnection;
-
-
-    private final UpdateConnectionStatusTimer updateConnectionStatusTimer = new UpdateConnectionStatusTimer();
 
     private TimerTask getUpdateConnectionStatusTask() {
         return new TimerTask() {
@@ -463,20 +469,13 @@ public class MainWindowController {
     private final Runnable dcArmAction = () -> sendCommandAction.accept("dc arm");
     private final Runnable rpmArmAction = () -> sendCommandAction.accept("rpm arm");
     private final Runnable updateConnectionStatusAction = this::updateConnectionStatus;
-    private final Function<Throwable, ? extends Void> defaultExceptionHandler = this::printError;
+    private final Function<Throwable, ? extends Void> defaultExceptionHandler = ex -> {
+        ex.printStackTrace();
+        return null;
+    };
     private final Function<Throwable, ? extends ConnectionInfo> CheckConnectionExceptionHandler = e -> {
         SapogUtils.printError(setup_console, e);
         return NO_CONNECTION;
-    };
-
-    private final BiFunction<Void, Throwable, Void> connectionHandler = (voidValue, exception) -> {
-        if (exception != null) {
-            SapogUtils.alert(mainElement.getScene().getWindow(), ERROR, "Connection error", null, getSimpleErrorMessage(exception), null, null);
-        } else {
-            System.out.println("update connection status");
-            updateConnectionStatusAction.run();
-        }
-        return null;
     };
 
     private final Function<String, Object> getCurrentValueFunction = backendCaller::getCurrentValue;
@@ -505,8 +504,8 @@ public class MainWindowController {
 
     private final Consumer<File> saveConfigToFileActionConsumer = f -> savePropertiesToFile(prepareCurrentValuesConfig(), f);
 
-    private final Consumer<ActionEvent> loadAllFromBoardAction = event -> showModalWindow("Loading parameters...", progressWindowConfigLocation,
-            ((Button) event.getTarget()).getScene().getWindow(), progressBarLoadAction);
+    private final Consumer<Window> loadAllFromBoardAction = window -> showModalWindow("Loading parameters...", progressWindowConfigLocation,
+            window, progressBarLoadAction);
 
     private final Consumer<ActionEvent> setAllToBoardAction = event -> showModalWindow("Setting parameters...", progressWindowConfigLocation,
             ((Button) event.getTarget()).getScene().getWindow(), progressBarSaveAction);
@@ -525,6 +524,19 @@ public class MainWindowController {
             if (!isBlankOrNull(configValue)) v.setValue(configValue);
             else System.out.println(format("No value for field '%s'...", k));
         });
+    };
+
+    private final BiFunction<Void, Throwable, Void> connectionHandler = (voidValue, exception) -> {
+        if (exception != null) {
+            SapogUtils.alert(mainElement.getScene().getWindow(), ERROR, "Connection error", null, getSimpleErrorMessage(exception), null, null);
+        } else {
+            System.out.println("update connection status");
+            updateConnectionStatusAction.run();
+
+            CompletableFuture.runAsync(() -> loadAllFromBoardAction.accept(
+                    mainElement.getScene().getWindow())).exceptionally(defaultExceptionHandler);
+        }
+        return null;
     };
 
     private final Runnable loadDefaultConfigAction = () -> {
@@ -630,17 +642,15 @@ public class MainWindowController {
     }
 
     private void setButtonValueImpl(ButtonImpl buttonImpl, Consumer<ButtonImpl> setButtonValueAction) {
-        CompletableFuture.runAsync(() -> {
-            try {
-                buttonImpl.getIndicator().setVisible(true);
-                buttonImpl.getButton().setDisable(true);
-                setButtonValueAction.accept(buttonImpl);
-                System.out.println("successfully set value");
-            } finally {
-                buttonImpl.getIndicator().setVisible(false);
-                buttonImpl.getButton().setDisable(false);
-            }
-        }).exceptionally(defaultExceptionHandler);
+        try {
+            buttonImpl.getIndicator().setVisible(true);
+            buttonImpl.getButton().setDisable(true);
+            setButtonValueAction.accept(buttonImpl);
+            System.out.println("successfully set value");
+        } finally {
+            buttonImpl.getIndicator().setVisible(false);
+            buttonImpl.getButton().setDisable(false);
+        }
     }
 
     /**
@@ -701,7 +711,7 @@ public class MainWindowController {
         try {
             action.run();
         } catch (Exception ex) {
-            printError(ex);
+            ex.printStackTrace();
         }
     }
 
@@ -734,7 +744,10 @@ public class MainWindowController {
 
     private Properties prepareCurrentValuesConfig() {
         Properties props = new Properties();
-        buttons.forEach((k, v) -> props.setProperty(v.getFieldName(), String.valueOf(v.getValue())));
+        buttons.forEach((k, v) -> {
+            if (k.equalsIgnoreCase(set_rpm_button.getId())) return; //---
+            props.setProperty(v.getFieldName(), String.valueOf(v.getValue()));
+        });
         return props;
     }
 
@@ -750,11 +763,15 @@ public class MainWindowController {
     }
 
     private void startReadDCValues() {
-        new Timer().scheduleAtFixedRate(new TimerTask() {
+        dcValueReader.scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
                 setSliderValueImpl(dc_slider);
             }
         }, 0, sliderFrequency);
+    }
+
+    private void loadAllFromBoardImpl(Window window) {
+        CompletableFuture.runAsync(() -> loadAllFromBoardAction.accept(window)).exceptionally(defaultExceptionHandler);
     }
 }

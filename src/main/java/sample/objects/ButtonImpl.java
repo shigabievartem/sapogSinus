@@ -65,7 +65,7 @@ public class ButtonImpl {
     }
 
     private Object getValueImpl() {
-        if (checkBox != null) return checkBox.isSelected(); //---
+        if (checkBox != null) return checkBox.isSelected() ? 1 : 0; //---
 
         String currentValue = String.valueOf(textField.getCharacters()).trim();
         TextFormatter formatter = textField.getTextFormatter();
@@ -120,18 +120,18 @@ public class ButtonImpl {
      * Метод устанавливает визуальное значение
      */
     public void setValue(Object currentValue) {
-        if (checkBox != null) {
-            if (Objects.requireNonNull(currentValue, "Boolean value can not be null") instanceof Boolean) {
-                checkBox.setSelected((Boolean) currentValue);
-                return; //---
-            }
-            if (currentValue instanceof String) {
-                checkBox.setSelected(Boolean.parseBoolean((String) currentValue));
-                return; //---
-            }
-            throw new RuntimeException(format("Value '%s' cannot be fetch to boolean value", currentValue));
+        if (textField != null) {
+            textField.setText(currentValue == null ? "" : currentValue.toString());
+            return; //---
         }
-        textField.setText(currentValue == null ? "" : currentValue.toString());
+        if (currentValue == null || checkBox == null) return; //---
+        checkBox.setSelected(parseBooleanValue(currentValue));
+    }
 
+    private boolean parseBooleanValue(@NotNull Object value) {
+        if (value instanceof Boolean) return (Boolean) value;
+        if (value instanceof String) return Boolean.parseBoolean((String) value);
+        if (value instanceof Integer) return (Integer) value == 1;
+        throw new RuntimeException("unexpected type of boolean value");
     }
 }
