@@ -9,7 +9,7 @@ import java.net.URL;
 
 public interface SapogConst {
     String ERROR_BUTTON_STYLE = "error";
-    ConnectionInfo NO_CONNECTION = new ConnectionInfo(false, null, null, null, null);
+    ConnectionInfo NO_CONNECTION = new ConnectionInfo(false, null, null, null, null, null);
 
     class WindowConfigLocations {
         public static final URL mainWindowConfigLocation = ApplicationStarter.class.getResource("/fxml/mainWindow.fxml");
