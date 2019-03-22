@@ -8,6 +8,7 @@ import sample.objects.ConnectionInfo;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 
 import static java.lang.String.format;
 import static sample.utils.SapogConst.NO_CONNECTION;
@@ -66,17 +67,18 @@ public class BackendCaller {
     }
 
     public synchronized ConnectionInfo checkConnection() {
-        if (serial == null) {
-            return NO_CONNECTION;
-        }
-        return serial.getConnectionInfo();
+        return (serial == null) ? NO_CONNECTION : serial.getConnectionInfo();
     }
 
-    public synchronized void connect(@NotNull String port) throws SerialPortException {
+    public synchronized void connect(@NotNull String port) throws IOException {
         Objects.requireNonNull(port, "Empty port!");
         if ((serial == null) || !serial.isOpened()) {
-            serial = new SerialDevice("default_port", port);
-            serial.setConsole(mainConsole);
+            try {
+                serial = new SerialDevice("default_port", port);
+                serial.setConsole(mainConsole);
+            } catch (SerialPortException e) {
+                throw new IOException(e);
+            }
         } else if (serial.isOpened()) {
             //TODO can not open port when it's already open, this is an error?
         }
@@ -95,23 +97,40 @@ public class BackendCaller {
         }
     }
 
+    //TODO throw IOException
     public Map<String, Object> getCurrentValues() {
-        if (serial != null)
-            return serial.getCurrentParamMap();
+        if (serial != null) {
+            try {
+                sendCommand("cfg list");
+                TimeUnit.MILLISECONDS.sleep(2000);
+                return serial.getCurrentParamMap();
+            } catch (InterruptedException e) {
+                return null;
+                //TODO return smth meaningful
+            }
+        }
         return null;
     }
 
+    //TODO throw IOException
     public String sendCommand(String text) {
         try {
             serial.sendString(text);
         } catch (SerialPortException | IOException e) {
-            return e.toString();
+            //TODO throw new IOException(e.toString());
         }
         return "";
     }
 
     public void closeMainWindow() {
         //TODO доработать необходимую логику
+        if (serial != null) {
+            try {
+                serial.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
         System.out.println("Main window closed, back know about it!");
 
     }
