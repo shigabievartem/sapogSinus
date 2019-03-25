@@ -435,8 +435,9 @@ public class MainWindowController {
         if (!port_button.getItems().contains(currentPort)) port_button.getItems().add(currentPort);
         try {
             backendCaller.connect(currentPort);
+            print("Successfully connected to port: '%s'", getPort());
+        } catch (IOException e) {
             System.out.println(format("Successfully connected to port: '%s'", getPort()));
-        } catch (SerialPortException e) {
             e.printStackTrace();
             throw new RuntimeException(e);
         }

@@ -112,7 +112,6 @@ public class BackendCaller {
         return null;
     }
 
-
     /***
      * Метод отправки команды
      * @param text - команда отправленная из консоли
