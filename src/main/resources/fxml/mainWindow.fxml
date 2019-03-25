@@ -603,7 +603,10 @@
       </TabPane>
       <HBox alignment="BOTTOM_LEFT" maxHeight="30.0" minHeight="30.0" prefHeight="30.0">
          <children>
-            <Label id="info_voltage" fx:id="version_info" alignment="CENTER" layoutX="10.0" layoutY="15.0" maxWidth="250.0" minWidth="330.0" prefHeight="30.0" prefWidth="250.0" textAlignment="CENTER" />
+            <Label id="info_voltage" fx:id="version_info" alignment="CENTER" layoutX="10.0" layoutY="15.0" maxWidth="310.0" minWidth="310.0" prefHeight="30.0" prefWidth="310.0" textAlignment="CENTER">
+               <HBox.margin>
+                  <Insets left="10.0" />
+               </HBox.margin></Label>
             <Separator layoutX="110.0" layoutY="11.0" maxHeight="29.0" minHeight="29.0" orientation="VERTICAL" prefHeight="29.0" />
             <Label id="info_voltage" fx:id="vol_info" alignment="CENTER" prefHeight="30.0" prefWidth="100.0" textAlignment="CENTER" />
             <Separator maxHeight="29.0" minHeight="29.0" orientation="VERTICAL" prefHeight="29.0" />
