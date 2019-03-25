@@ -17,8 +17,6 @@
 <?import javafx.scene.control.TabPane?>
 <?import javafx.scene.control.TextArea?>
 <?import javafx.scene.control.TextField?>
-<?import javafx.scene.image.Image?>
-<?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.ColumnConstraints?>
 <?import javafx.scene.layout.GridPane?>
@@ -31,9 +29,9 @@
 
 <VBox fx:id="mainElement" prefHeight="600.0" prefWidth="800.0" xmlns="http://javafx.com/javafx/8.0.172-ea" xmlns:fx="http://javafx.com/fxml/1" fx:controller="sample.controllers.MainWindowController">
    <children>
-      <HBox maxHeight="100.0" minHeight="100.0" prefHeight="100.0" spacing="15.0">
+      <HBox maxHeight="80.0" maxWidth="800.0" minHeight="80.0" minWidth="800.0" prefHeight="80.0" prefWidth="800.0" spacing="15.0">
          <children>
-            <VBox>
+            <VBox maxHeight="80.0" maxWidth="800.0" minHeight="80.0" minWidth="800.0" prefHeight="80.0" prefWidth="800.0">
                <children>
                   <Pane maxHeight="40.0">
                      <children>
@@ -49,14 +47,14 @@
                   </Pane>
                   <Pane>
                      <children>
-                        <HBox spacing="10.0">
+                        <HBox maxWidth="800.0" minWidth="800.0" prefWidth="800.0" spacing="15.0">
                            <children>
-                              <ComboBox id="port_button" fx:id="port_button" editable="true" prefHeight="50.0" prefWidth="100.0">
+                              <ComboBox id="port_button" fx:id="port_button" editable="true" prefHeight="35.0" prefWidth="350.0">
                                  <HBox.margin>
                                     <Insets left="10.0" top="5.0" />
                                  </HBox.margin>
                               </ComboBox>
-                              <Button id="connect_button" fx:id="connect_button" mnemonicParsing="false" onAction="#connect" prefHeight="50.0" prefWidth="70.0" text="Connect" textAlignment="CENTER">
+                              <Button id="connect_button" fx:id="connect_button" mnemonicParsing="false" onAction="#connect" prefHeight="35.0" prefWidth="75.0" text="Connect" textAlignment="CENTER">
                                  <font>
                                     <Font size="11.0" />
                                  </font>
@@ -64,7 +62,7 @@
                                     <Insets top="5.0" />
                                  </HBox.margin>
                               </Button>
-                              <Button id="disconnect_button" fx:id="disconnect_button" mnemonicParsing="false" onAction="#disconnect" prefHeight="50.0" prefWidth="70.0" text="Disconnect" textAlignment="CENTER">
+                              <Button id="disconnect_button" fx:id="disconnect_button" mnemonicParsing="false" onAction="#disconnect" prefHeight="35.0" prefWidth="75.0" text="Disconnect" textAlignment="CENTER">
                                  <font>
                                     <Font size="11.0" />
                                  </font>
@@ -72,28 +70,28 @@
                                     <Insets top="5.0" />
                                  </HBox.margin>
                               </Button>
-                              <Button id="reboot_button" fx:id="reboot_button" mnemonicParsing="false" onAction="#reboot" prefHeight="50.0" prefWidth="70.0" text="Reboot">
+                              <Button id="beep_button" fx:id="beep_button" mnemonicParsing="false" onAction="#beep" prefHeight="35.0" prefWidth="55.0" text="Beep">
                                  <font>
                                     <Font size="11.0" />
                                  </font>
                                  <HBox.margin>
-                                    <Insets top="5.0" />
+                                    <Insets left="10.0" right="5.0" top="5.0" />
                                  </HBox.margin>
                               </Button>
-                              <Button id="boot_button" fx:id="boot_button" mnemonicParsing="false" onAction="#boot" prefHeight="50.0" prefWidth="70.0" text="Boot">
+                              <Button id="reboot_button" fx:id="reboot_button" mnemonicParsing="false" onAction="#reboot" prefHeight="35.0" prefWidth="55.0" text="Reboot">
                                  <font>
                                     <Font size="11.0" />
                                  </font>
                                  <HBox.margin>
-                                    <Insets top="5.0" />
+                                    <Insets left="5.0" right="5.0" top="5.0" />
                                  </HBox.margin>
                               </Button>
-                              <Button id="beep_button" fx:id="beep_button" mnemonicParsing="false" onAction="#beep" prefHeight="50.0" prefWidth="70.0" text="Beep">
+                              <Button id="boot_button" fx:id="boot_button" mnemonicParsing="false" onAction="#boot" prefHeight="35.0" prefWidth="55.0" text="Boot">
                                  <font>
                                     <Font size="11.0" />
                                  </font>
                                  <HBox.margin>
-                                    <Insets right="10.0" top="5.0" />
+                                    <Insets left="5.0" top="5.0" />
                                  </HBox.margin>
                               </Button>
                            </children>
@@ -102,17 +100,9 @@
                   </Pane>
                </children>
             </VBox>
-            <ImageView fitHeight="90.0" fitWidth="240.0" pickOnBounds="true" preserveRatio="true">
-               <HBox.margin>
-                  <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
-               </HBox.margin>
-               <image>
-                  <Image url="@../images/logo%20test.png" />
-               </image>
-            </ImageView>
          </children>
       </HBox>
-      <TabPane maxHeight="470.0" minHeight="470.0" prefHeight="470.0" tabClosingPolicy="UNAVAILABLE">
+      <TabPane maxHeight="490.0" minHeight="490.0" prefHeight="490.0" tabClosingPolicy="UNAVAILABLE">
          <tabs>
             <Tab closable="false" text="Setup">
                <content>
@@ -471,9 +461,9 @@
                                     <Insets bottom="10.0" left="10.0" right="10.0" top="5.0" />
                                  </padding>
                               </HBox>
-                              <SplitPane dividerPositions="0.9" maxHeight="220.0" minHeight="220.0" orientation="VERTICAL" prefHeight="220.0" style="-fx-padding: 0; -fx-background-color: transparent;" stylesheets="@../css/styles.css">
+                              <SplitPane dividerPositions="0.9" maxHeight="240.0" minHeight="240.0" orientation="VERTICAL" prefHeight="240.0" style="-fx-padding: 0; -fx-background-color: transparent;" stylesheets="@../css/styles.css">
                                  <items>
-                                    <AnchorPane minHeight="50.0" minWidth="0.0" prefHeight="200.0">
+                                    <AnchorPane maxHeight="220.0" minHeight="50.0" minWidth="0.0" prefHeight="220.0">
                                        <children>
                                           <TextArea id="setup_console" fx:id="setup_console" editable="false" promptText="Console output" style="-fx-background-radius: 0; -fx-control-inner-background: black; -fx-font-family: Consolas; -fx-highlight-fill: white; -fx-highlight-text-fill: black; -fx-text-fill: white; -fx-prompt-text-fill: gray;" wrapText="true" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0" />
                                        </children>
@@ -496,9 +486,9 @@
             </Tab>
             <Tab closable="false" text="Testing">
                <content>
-                  <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
+                  <AnchorPane maxHeight="460.0" minHeight="0.0" minWidth="0.0" prefHeight="460.0" prefWidth="200.0">
                      <children>
-                        <VBox layoutX="124.0" layoutY="21.0" maxHeight="400.0" minHeight="440.0" prefHeight="440.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+                        <VBox layoutX="124.0" layoutY="21.0" maxHeight="460.0" minHeight="460.0" prefHeight="460.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
                            <children>
                               <HBox maxHeight="100.0" minHeight="100.0" prefHeight="100.0" spacing="25.0">
                                  <children>
@@ -515,7 +505,7 @@
                                           <HBox spacing="10.0">
                                              <children>
                                                 <Button id="dc_arm_button" fx:id="dc_arm_button" mnemonicParsing="false" onAction="#dcArmAction" prefHeight="30.0" prefWidth="70.0" text="dc arm" />
-                                                <Slider id="dc_slider" fx:id="dc_slider" blockIncrement="0.01" majorTickUnit="0.1" max="1.0" minorTickCount="10" prefHeight="50.0" prefWidth="350.0" showTickLabels="true" showTickMarks="true" snapToTicks="true">
+                                                <Slider id="dc_slider" fx:id="dc_slider" blockIncrement="0.01" majorTickUnit="0.1" max="1.0" min="0.3" minorTickCount="10" prefHeight="50.0" prefWidth="350.0" showTickLabels="true" showTickMarks="true" snapToTicks="true" value="0.3">
                                                    <padding>
                                                       <Insets bottom="5.0" top="5.0" />
                                                    </padding>
@@ -562,7 +552,7 @@
                                     <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
                                  </padding>
                               </HBox>
-                              <TabPane maxHeight="340.0" minHeight="340.0" prefHeight="340.0" side="BOTTOM" tabClosingPolicy="UNAVAILABLE">
+                              <TabPane maxHeight="360.0" minHeight="360.0" prefHeight="360.0" side="BOTTOM" tabClosingPolicy="UNAVAILABLE">
                                  <tabs>
                                     <Tab text="Area chart">
                                        <content>
@@ -613,6 +603,8 @@
       </TabPane>
       <HBox alignment="BOTTOM_LEFT" maxHeight="30.0" minHeight="30.0" prefHeight="30.0">
          <children>
+            <Label id="info_voltage" fx:id="version_info" alignment="CENTER" layoutX="10.0" layoutY="15.0" prefHeight="30.0" prefWidth="100.0" textAlignment="CENTER" />
+            <Separator layoutX="110.0" layoutY="11.0" maxHeight="29.0" minHeight="29.0" orientation="VERTICAL" prefHeight="29.0" />
             <Label id="info_voltage" fx:id="vol_info" alignment="CENTER" prefHeight="30.0" prefWidth="100.0" textAlignment="CENTER" />
             <Separator maxHeight="29.0" minHeight="29.0" orientation="VERTICAL" prefHeight="29.0" />
             <Label id="info_amperage" fx:id="amp_info" alignment="CENTER" layoutX="10.0" layoutY="10.0" prefHeight="30.0" prefWidth="100.0" textAlignment="CENTER" />

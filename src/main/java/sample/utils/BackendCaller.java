@@ -90,13 +90,8 @@ public class BackendCaller {
      * @param text - команда отправленная из консоли
      * @return - ответ, который будет распечатан в консоли. Если строка пустая или null в консоль ничего не попадёт
      */
-    public String sendCommand(String text){
-        try {
-            serial.sendString(text);
-        } catch (IOException e) {
-            e.printStackTrace();
-            //TODO добавить throws IOException
-        }
+    public String sendCommand(String text) throws IOException {
+        serial.sendString(text);
         return "";
     }
 

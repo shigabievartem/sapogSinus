@@ -8,6 +8,7 @@ public class UpdateConnectionStatusTimer {
     private TimerTask timerTask;
 
     public void start(TimerTask timerTask, long delay, long period) {
+        stop();
         this.timerTask = timerTask;
         timer.scheduleAtFixedRate(this.timerTask, delay, period);
     }

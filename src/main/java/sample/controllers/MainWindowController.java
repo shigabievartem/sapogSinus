@@ -14,7 +14,6 @@ import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import javafx.stage.Stage;
 import javafx.stage.Window;
-import jssc.SerialPortException;
 import sample.objects.ButtonImpl;
 import sample.objects.ConnectionInfo;
 import sample.objects.filters.DecimalFilter;
@@ -153,6 +152,8 @@ public class MainWindowController {
     private VBox mainElement;
 
     @FXML
+    private Label version_info;
+    @FXML
     private Label vol_info;
     @FXML
     private Label amp_info;
@@ -208,6 +209,11 @@ public class MainWindowController {
      * Частота проверки соединения
      */
     private final long checkConnectionFrequency = 2 * 1000;
+
+    /**
+     * Время ожидания, после завершения выполнения задания с установкой или загрузкой параметров, после которого окно закроется
+     */
+    private long waitModalWindowBeforeCloseTime = 2 * 1000;
 
     @FXML
     void initialize() {
@@ -327,6 +333,12 @@ public class MainWindowController {
         CompletableFuture.runAsync(loadDefaultConfigAction).exceptionally(defaultExceptionHandler);
     }
 
+    private final Runnable updateConnectionStatusAction = this::updateConnectionStatus;
+
+    private final Consumer<IOException> IOExceptionHandler = e -> {
+        e.printStackTrace();
+        updateConnectionStatusAction.run();
+    };
 
     private Consumer<ButtonImpl> setButtonAction = (buttonImpl) -> {
         Object currentValue = buttonImpl.getValue();
@@ -336,14 +348,17 @@ public class MainWindowController {
         try {
             backendCaller.setValue(variableName, currentValue);
         } catch (IOException e) {
-            e.printStackTrace();
-            //TODO обработать
+            IOExceptionHandler.accept(e);
         }
     };
 
-    //TODO обработать IOException, добавить его в заголовок метода backendCaller.sendCommand,
-    //TODO убрать внутреннюю обработку IOException из backendCaller.sendCommand
-    private Consumer<ButtonImpl> setRpmButtonAction = (buttonImpl) -> backendCaller.sendCommand(format("rpm %d", (Integer) buttonImpl.getValue()));
+    private Consumer<ButtonImpl> setRpmButtonAction = (buttonImpl) -> {
+        try {
+            backendCaller.sendCommand(format("rpm %d", (Integer) buttonImpl.getValue()));
+        } catch (IOException e) {
+            IOExceptionHandler.accept(e);
+        }
+    };
 
     private final Consumer<ActionEvent> setValueAction = (event -> {
         Objects.requireNonNull(event, "Empty event!");
@@ -417,8 +432,8 @@ public class MainWindowController {
             public void run() {
                 ConnectionInfo info;
                 try {
-                    info = CompletableFuture.supplyAsync(checkConnectionAction).exceptionally(CheckConnectionExceptionHandler).get(defaultTimeOut, SECONDS);
-                } catch (InterruptedException | ExecutionException | TimeoutException e) {
+                    info = CompletableFuture.supplyAsync(checkConnectionAction).get(defaultTimeOut, SECONDS);
+                } catch (Exception e) {
                     e.printStackTrace();
                     info = NO_CONNECTION;
                 }
@@ -443,20 +458,19 @@ public class MainWindowController {
         if (!port_button.getItems().contains(currentPort)) port_button.getItems().add(currentPort);
         try {
             backendCaller.connect(currentPort);
-            print("Successfully connected to port: '%s'", getPort());
-        } catch (IOException e) {
             System.out.println(format("Successfully connected to port: '%s'", getPort()));
+        } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException(e);
         }
     };
+
     private final Runnable disconnectAction = () -> {
         updateConnectionInfo.accept(NO_CONNECTION);
         try {
             backendCaller.disconnect();
         } catch (IOException e) {
-            e.printStackTrace();
-            //TODO обработать
+            IOExceptionHandler.accept(e);
         }
         System.out.println(format("Controller manually disconnected from port '%s'", getPort()));
     };
@@ -464,10 +478,15 @@ public class MainWindowController {
     private final Consumer<String> sendCommandAction = text -> {
         String serverAnswer;
         try {
-            //TODO обработать IOException, добавить его в заголовок метода backendCaller.sendCommand,
-            //TODO убрать внутреннюю обработку IOException из backendCaller.sendCommand
             serverAnswer = CompletableFuture.supplyAsync(() ->
-                    backendCaller.sendCommand(text)).exceptionally((e) -> {
+            {
+                try {
+                    return backendCaller.sendCommand(text);
+                } catch (IOException e) {
+                    IOExceptionHandler.accept(e);
+                    return null;
+                }
+            }).exceptionally((e) -> {
                 e.printStackTrace();
                 return null;
             }).get(defaultTimeOut, SECONDS);
@@ -483,26 +502,49 @@ public class MainWindowController {
     private final Runnable beepAction = () -> sendCommandAction.accept("beep");
     private final Runnable dcArmAction = () -> sendCommandAction.accept("dc arm");
     private final Runnable rpmArmAction = () -> sendCommandAction.accept("rpm arm");
-    private final Runnable updateConnectionStatusAction = this::updateConnectionStatus;
     private final Function<Throwable, ? extends Void> defaultExceptionHandler = ex -> {
         ex.printStackTrace();
         return null;
     };
-    private final Function<Throwable, ? extends ConnectionInfo> CheckConnectionExceptionHandler = e -> {
-        SapogUtils.printError(setup_console, e);
-        return NO_CONNECTION;
-    };
 
     private final Consumer<ProgressWindowController> progressBarLoadAction = (c) -> {
-        LoadAllFromBoardTask task = new LoadAllFromBoardTask(c, buttons);
-        c.getProgress_bar().progressProperty().bind(task.progressProperty());
-        CompletableFuture.runAsync(task).thenRun(() -> setLabel(c.getLabel(), "All parameters loaded from board."));
+        try {
+            LoadAllFromBoardTask task = new LoadAllFromBoardTask(c, buttons);
+            c.getProgress_bar().progressProperty().bind(task.progressProperty());
+            CompletableFuture.runAsync(task).thenRun(() -> {
+                setLabel(c.getLabel(), "All parameters loaded from board.");
+                try {
+                    Thread.sleep(waitModalWindowBeforeCloseTime);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                c.closeWindow();
+            });
+        } catch (IOException e) {
+            IOExceptionHandler.accept(e);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     };
 
     private final Consumer<ProgressWindowController> progressBarSaveAction = (c) -> {
-        SetAllToBoardTask task = new SetAllToBoardTask(c, buttons);
-        c.getProgress_bar().progressProperty().bind(task.progressProperty());
-        CompletableFuture.runAsync(task).thenRun(() -> setLabel(c.getLabel(), "All parameters set to board."));
+        try {
+            SetAllToBoardTask task = new SetAllToBoardTask(c, buttons);
+            c.getProgress_bar().progressProperty().bind(task.progressProperty());
+            CompletableFuture.runAsync(task).thenRun(() -> {
+                setLabel(c.getLabel(), "All parameters set to board.");
+                try {
+                    Thread.sleep(waitModalWindowBeforeCloseTime);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                c.closeWindow();
+            });
+        } catch (IOException e) {
+            IOExceptionHandler.accept(e);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     };
 
     private final Consumer<File> saveConfigToFileActionConsumer = f -> savePropertiesToFile(prepareCurrentValuesConfig(), f);
@@ -635,11 +677,11 @@ public class MainWindowController {
                 System.out.println(format("%s changing value: '%s' -> '%s'", variableName, lastSliderValue, currentValue));
 
                 slider.setDisable(true);
-                //TODO обработать IOException, добавить его в заголовок метода backendCaller.sendCommand,
-                //TODO убрать внутреннюю обработку IOException из backendCaller.sendCommand
                 backendCaller.sendCommand(format("dc %.2f", currentValue));
                 lastSliderValue = currentValue;
                 System.out.println("successfully set value");
+            } catch (IOException e) {
+                IOExceptionHandler.accept(e);
             } finally {
                 slider.setDisable(false);
             }
@@ -672,13 +714,12 @@ public class MainWindowController {
     }
 
     private final Consumer<ConnectionInfo> updateStatusBarAction = info -> {
+        version_info.setText(isBlankOrNull(info.getVersion()) ? "" : info.getVersion());
         vol_info.setText(isBlankOrNull(info.getVoltage()) ? "" : format("%s v", info.getVoltage()));
         amp_info.setText(isBlankOrNull(info.getAmperage()) ? "" : format("%s A", info.getAmperage()));
         dc_info.setText(isBlankOrNull(info.getDc()) ? "" : format("%s DC", info.getDc()));
         rpm_info.setText(isBlankOrNull(info.getRpm()) ? "" : format("%s RPM", info.getRpm()));
         connection_indicator.setFill(info.isConnected() ? Color.valueOf("2c9a24") : Color.RED);
-        //TODO допилить добавление версии
-        info.getVersion();
     };
 
     /**

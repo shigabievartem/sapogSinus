@@ -12,6 +12,7 @@ public class ConnectionInfo {
 
     public ConnectionInfo(@NotNull boolean isConnected, Double voltage, Double amperage, Double dc, Integer rpm, String version) {
         this.isConnected = isConnected;
+        this.version = version;
         this.voltage = voltage;
         this.amperage = amperage;
         this.dc = dc;

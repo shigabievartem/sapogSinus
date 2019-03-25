@@ -56,7 +56,7 @@ public class ProgressWindowController {
     }
 
     public void closeWindow() {
-        getProgress_bar().getScene().getWindow().fireEvent(new Event(closeModalWindow));
+        getProgress_bar().getScene().getRoot().fireEvent(new Event(closeModalWindow));
     }
 
     private boolean requestPermissionToClose() {

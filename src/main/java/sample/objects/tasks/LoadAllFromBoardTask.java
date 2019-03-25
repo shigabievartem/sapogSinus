@@ -18,18 +18,13 @@ import static sample.utils.SapogUtils.*;
  */
 public class LoadAllFromBoardTask extends Task<Void> {
 
-    private Map<String, Object> currentValues = null; //TODO обратите внимание
+    private Map<String, Object> currentValues = null;
     private final Map<String, ButtonImpl> buttons;
     private final ProgressWindowController progressWindowController;
 
-    public LoadAllFromBoardTask(@NotNull ProgressWindowController progressWindowController, @NotNull Map<String, ButtonImpl> buttons) {
+    public LoadAllFromBoardTask(@NotNull ProgressWindowController progressWindowController, @NotNull Map<String, ButtonImpl> buttons) throws IOException {
         this.progressWindowController = progressWindowController;
-        try {
-            this.currentValues = Objects.requireNonNull(BackendCaller.getInstance().getCurrentValues(), "Empty current values!");
-        } catch (IOException e) {
-            //TODO обработать
-            e.printStackTrace();
-        }
+        this.currentValues = Objects.requireNonNull(BackendCaller.getInstance().getCurrentValues(), "Empty current values!");
         this.buttons = buttons;
     }
 

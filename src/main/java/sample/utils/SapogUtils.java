@@ -79,8 +79,14 @@ public class SapogUtils {
                         stage.setMinHeight(150);
                         Scene scene = new Scene(root);
                         root.addEventHandler(closeModalWindow, (event) -> {
-                            stage.close();
-                            window.fireEvent(event);
+                            try {
+                                runInMainThread(() -> {
+                                    stage.close();
+                                    window.fireEvent(event);
+                                });
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
                         });
                         stage.setScene(scene);
                         stage.initModality(Modality.WINDOW_MODAL);

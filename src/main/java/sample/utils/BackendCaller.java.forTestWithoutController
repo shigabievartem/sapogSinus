@@ -1,10 +1,10 @@
 package sample.utils;
 
 import javafx.scene.control.TextArea;
-import jssc.SerialPortException;
 import org.jetbrains.annotations.NotNull;
 import sample.objects.ConnectionInfo;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -50,29 +50,28 @@ public class BackendCaller {
         return "";
     }
 
-    public synchronized void setValue(String fieldName, Object value) {
+    public synchronized void setValue(String fieldName, Object value) throws IOException {
         System.out.println(format("Received new value '%s' for field '%s'", value, fieldName));
     }
 
     public synchronized ConnectionInfo checkConnection() {
         if (connectedPorts.isEmpty()) return NO_CONNECTION; //---
 
-        return new ConnectionInfo(true, 12.3, 15.1, 123.3, 321, null);
+        return new ConnectionInfo(true, 12.3, 15.1, 123.3, 321, "v. 15.1");
     }
 
     private volatile Set<String> connectedPorts = ConcurrentHashMap.newKeySet();
 
-    public synchronized void connect(String port) throws SerialPortException {
+    public synchronized void connect(String port) throws IOException {
         Objects.requireNonNull(port, "Empty port!");
         connectedPorts.add(port);
     }
 
-    public synchronized void disconnect(String port) {
-        Objects.requireNonNull(port, "Empty port!");
-        connectedPorts.remove(port);
+    public synchronized void disconnect() throws IOException {
+        connectedPorts.clear();
     }
 
-    public Map<String, Object> getCurrentValues() {
+    public Map<String, Object> getCurrentValues() throws IOException {
         Map<String, Object> currentParamMap = new HashMap<>();
         currentParamMap.put("esc_base", 256);
         currentParamMap.put("esc_index", 0);
@@ -86,11 +85,11 @@ public class BackendCaller {
         currentParamMap.put("mot_i_max", 20);
         currentParamMap.put("sens_i_scale", 1);
         currentParamMap.put("dc_slider", 0.5d);
-        currentParamMap.put("set_rpm", 99);
+        currentParamMap.put("set_rpm", 900);
         return currentParamMap;
     }
 
-    public String sendCommand(String text) {
+    public String sendCommand(String text) throws IOException {
         System.out.println(format("back receive command '%s'", text));
         return format("command '%s' successfully processed", text);
     }

@@ -14,18 +14,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static sample.utils.SapogUtils.*;
 
 public class SetAllToBoardTask extends Task<Void> {
-    private Map<String, Object> currentValues = null; //TODO обратите внимание
     private final Map<String, ButtonImpl> buttons;
     private final ProgressWindowController progressWindowController;
 
-    public SetAllToBoardTask(@NotNull ProgressWindowController progressWindowController, @NotNull Map<String, ButtonImpl> buttons) {
+    public SetAllToBoardTask(@NotNull ProgressWindowController progressWindowController, @NotNull Map<String, ButtonImpl> buttons) throws IOException {
         this.progressWindowController = progressWindowController;
-        try {
-            this.currentValues = Objects.requireNonNull(BackendCaller.getInstance().getCurrentValues(), "Empty current values!");
-        } catch (IOException e) {
-            e.printStackTrace();
-            //TODO обработать
-        }
         this.buttons = buttons;
     }
 
