@@ -5,6 +5,7 @@ import org.jetbrains.annotations.NotNull;
 import sample.objects.ConnectionInfo;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
@@ -104,5 +105,10 @@ public class BackendCaller {
             }
         }
         System.out.println("Main window closed, back know about it!");
+    }
+
+    public String[] getPortNames() {
+//        throw new RuntimeException("asdfdasf");
+        return Arrays.asList("port1", "port2", "port3").toArray(new String[0]);
     }
 }

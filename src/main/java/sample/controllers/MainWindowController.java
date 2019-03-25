@@ -455,7 +455,8 @@ public class MainWindowController {
 
     private final Runnable connectAction = () -> {
         String currentPort = getPort();
-        if (!port_button.getItems().contains(currentPort)) port_button.getItems().add(currentPort);
+//         При необходимости можно добавить введёный порт при успешном коннекте
+//        if (!port_button.getItems().contains(currentPort)) port_button.getItems().add(currentPort);
         try {
             backendCaller.connect(currentPort);
             System.out.println(format("Successfully connected to port: '%s'", getPort()));
@@ -644,6 +645,13 @@ public class MainWindowController {
      * Соберем все кнопки с изменяемым значением в одну кололекцию
      */
     private void initializeButtons() {
+        String[] portNames = new String[0];
+        try {
+            portNames = CompletableFuture.supplyAsync(backendCaller::getPortNames).get(defaultTimeOut, SECONDS);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        port_button.getItems().addAll(portNames);
         if (!port_button.getItems().isEmpty()) port_button.getSelectionModel().selectFirst();
 
         buttons = new ConcurrentHashMap<>();
