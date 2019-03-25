@@ -14,6 +14,7 @@ import javafx.stage.Window;
 
 import java.io.*;
 import java.net.URL;
+import java.text.DecimalFormat;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Objects;
@@ -28,7 +29,15 @@ import static sample.utils.SapogConst.Events.closeModalWindow;
 
 public class SapogUtils {
 
-    private static final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss");
+    private static final DecimalFormat decimalFormat;
+    private static final DateTimeFormatter dateTimeFormatter;
+
+    static {
+        decimalFormat = new DecimalFormat("##.##");
+        decimalFormat.setMinimumIntegerDigits(2);
+        dateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss");
+    }
+
 
     public static synchronized void showFileDialog(boolean isSaveAction, @NotNull Window window, Consumer<File> fileHandler) {
         runInMainThread(() -> {
@@ -185,6 +194,10 @@ public class SapogUtils {
                 console.appendText(format(text, objects));
             });
         }
+    }
+
+    public static String formatDecimalValue(Object value) {
+        return decimalFormat.format(value);
     }
 
     /**

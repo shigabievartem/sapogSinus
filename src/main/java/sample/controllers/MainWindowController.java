@@ -202,7 +202,7 @@ public class MainWindowController {
     /**
      * Частота считывания значения слайдера
      */
-    private final long sliderFrequency = 2 * 1000;
+    private final long sliderFrequency = 200;
     private Double lastSliderValue = 0.0;
 
     /**
@@ -266,7 +266,7 @@ public class MainWindowController {
      */
     @FXML
     public void boot(ActionEvent event) {
-        CompletableFuture.runAsync(bootAction).exceptionally(defaultExceptionHandler);
+        CompletableFuture.runAsync(bootAction).exceptionally(defaultExceptionHandler).thenRun(disconnectAction);
     }
 
     /**
@@ -282,7 +282,7 @@ public class MainWindowController {
      */
     @FXML
     public void dcArmAction(ActionEvent event) {
-        CompletableFuture.runAsync(dcArmAction).exceptionally(defaultExceptionHandler);
+        CompletableFuture.runAsync(dcArmAction).exceptionally(defaultExceptionHandler).thenRun(() -> setSliderValueImpl(dc_slider));
     }
 
     /**
@@ -685,11 +685,13 @@ public class MainWindowController {
                 System.out.println(format("%s changing value: '%s' -> '%s'", variableName, lastSliderValue, currentValue));
 
                 slider.setDisable(true);
-                backendCaller.sendCommand(format("dc %.2f", currentValue));
+                backendCaller.sendCommand(format("dc %s", formatDecimalValue(currentValue)));
                 lastSliderValue = currentValue;
                 System.out.println("successfully set value");
             } catch (IOException e) {
                 IOExceptionHandler.accept(e);
+            } catch (Exception e) {
+                e.printStackTrace();
             } finally {
                 slider.setDisable(false);
             }

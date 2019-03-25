@@ -85,10 +85,14 @@ public class ButtonImpl {
         Float value = Float.valueOf(strValue);
         Float maxValue = filter.getMaxValue();
         Float minValue = filter.getMinValue();
-        if (maxValue != null && value > maxValue)
+        if (maxValue != null && value > maxValue) {
+            setValue(maxValue);
             throw new RuntimeException(format("Max value(%s) < Current value(%s)", maxValue, value));
-        if (minValue != null && value < minValue)
+        }
+        if (minValue != null && value < minValue) {
+            setValue(minValue);
             throw new RuntimeException(format("Min value(%s) > Current value(%s)", minValue, value));
+        }
         return value;
     }
 
@@ -96,10 +100,14 @@ public class ButtonImpl {
         Integer value = Integer.valueOf(strValue);
         Integer maxValue = filter.getMaxValue();
         Integer minValue = filter.getMinValue();
-        if (maxValue != null && value > maxValue)
+        if (maxValue != null && value > maxValue) {
+            setValue(maxValue);
             throw new RuntimeException(format("Max value(%s) < Current value(%s)", maxValue, value));
-        if (minValue != null && value < minValue)
+        }
+        if (minValue != null && value < minValue) {
+            setValue(minValue);
             throw new RuntimeException(format("Min value(%s) > Current value(%s)", minValue, value));
+        }
         return value;
     }
 

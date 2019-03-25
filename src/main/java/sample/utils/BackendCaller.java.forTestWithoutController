@@ -5,10 +5,7 @@ import org.jetbrains.annotations.NotNull;
 import sample.objects.ConnectionInfo;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static java.lang.String.format;
@@ -96,5 +93,10 @@ public class BackendCaller {
 
     public void closeMainWindow() {
         System.out.println("Main window closed, back know about it!");
+    }
+
+    public String[] getPortNames() {
+//        throw new RuntimeException("asdfdasf");
+        return Arrays.asList("port1", "port2", "port3").toArray(new String[0]);
     }
 }

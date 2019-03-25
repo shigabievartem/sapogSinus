@@ -129,7 +129,7 @@
                                                             <Insets bottom="5.0" />
                                                          </padding>
                                                       </Label>
-                                                      <GridPane hgap="5.0" prefHeight="105.0" prefWidth="250.0" vgap="5.0">
+                                                      <GridPane hgap="5.0" maxWidth="245.0" minWidth="245.0" prefHeight="105.0" prefWidth="245.0" vgap="5.0">
                                                          <columnConstraints>
                                                             <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
                                                             <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
@@ -141,16 +141,16 @@
                                                             <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
                                                          </rowConstraints>
                                                          <children>
-                                                            <Label text="esc_base" />
-                                                            <Label text="esc_index" GridPane.rowIndex="1" />
-                                                            <Label text="pwm_enable" GridPane.rowIndex="2" />
+                                                            <Label maxWidth="70.0" minWidth="70.0" prefWidth="70.0" text="esc_base" />
+                                                            <Label maxWidth="70.0" minWidth="70.0" prefWidth="70.0" text="esc_index" GridPane.rowIndex="1" />
+                                                            <Label maxWidth="70.0" minWidth="70.0" prefWidth="70.0" text="pwm_enable" GridPane.rowIndex="2" />
                                                             <TextField id="esc_base_value" fx:id="esc_base_value" maxHeight="25.0" maxWidth="80.0" minHeight="25.0" minWidth="80.0" prefHeight="25.0" prefWidth="80.0" stylesheets="@../css/styles.css" GridPane.columnIndex="1" />
                                                             <TextField id="esc_index_value" fx:id="esc_index_value" maxHeight="25.0" maxWidth="80.0" minHeight="25.0" minWidth="80.0" prefHeight="25.0" prefWidth="80.0" stylesheets="@../css/styles.css" GridPane.columnIndex="1" GridPane.rowIndex="1" />
                                                             <CheckBox id="pwm_enable_value" fx:id="pwm_enable_value" alignment="CENTER" mnemonicParsing="false" prefHeight="25.0" prefWidth="25.0" selected="true" text="" GridPane.columnIndex="1" GridPane.rowIndex="2">
                                                                <GridPane.margin>
                                                                   <Insets left="35.0" />
                                                                </GridPane.margin></CheckBox>
-                                                            <HBox spacing="5.0" GridPane.columnIndex="2">
+                                                            <HBox maxWidth="80.0" minWidth="80.0" prefWidth="80.0" spacing="5.0" GridPane.columnIndex="2">
                                                                <children>
                                                                   <Button id="esc_base_button" fx:id="esc_base_button" mnemonicParsing="false" onAction="#setValue" prefHeight="50.0" prefWidth="50.0" text="Set" GridPane.columnIndex="2">
                                                                      <GridPane.margin>
@@ -163,7 +163,7 @@
                                                                   <Insets left="5.0" />
                                                                </GridPane.margin>
                                                             </HBox>
-                                                            <HBox layoutX="183.0" layoutY="10.0" spacing="5.0" GridPane.columnIndex="2" GridPane.rowIndex="1">
+                                                            <HBox layoutX="183.0" layoutY="10.0" maxWidth="80.0" minWidth="80.0" prefWidth="80.0" spacing="5.0" GridPane.columnIndex="2" GridPane.rowIndex="1">
                                                                <children>
                                                                   <Button id="esc_index_button" fx:id="esc_index_button" mnemonicParsing="false" onAction="#setValue" prefHeight="50.0" prefWidth="50.0" text="Set" GridPane.columnIndex="2">
                                                                      <GridPane.margin>
@@ -176,7 +176,7 @@
                                                                   <Insets left="5.0" />
                                                                </GridPane.margin>
                                                             </HBox>
-                                                            <HBox layoutX="183.0" layoutY="47.0" spacing="5.0" GridPane.columnIndex="2" GridPane.rowIndex="2">
+                                                            <HBox layoutX="183.0" layoutY="47.0" maxWidth="80.0" minWidth="80.0" prefWidth="80.0" spacing="5.0" GridPane.columnIndex="2" GridPane.rowIndex="2">
                                                                <children>
                                                                   <Button id="pwm_enable_button" fx:id="pwm_enable_button" mnemonicParsing="false" onAction="#setValue" prefHeight="50.0" prefWidth="50.0" text="Set" GridPane.columnIndex="2">
                                                                      <GridPane.margin>
@@ -191,7 +191,7 @@
                                                             </HBox>
                                                          </children>
                                                          <VBox.margin>
-                                                            <Insets left="5.0" right="5.0" />
+                                                            <Insets left="2.0" right="2.0" />
                                                          </VBox.margin>
                                                          <opaqueInsets>
                                                             <Insets />
@@ -211,7 +211,7 @@
                                                          <padding>
                                                             <Insets bottom="5.0" />
                                                          </padding></Label>
-                                                      <GridPane hgap="5.0" prefHeight="105.0" prefWidth="250.0" vgap="5.0">
+                                                      <GridPane hgap="5.0" maxHeight="105.0" maxWidth="255.0" minHeight="105.0" minWidth="260.0" prefHeight="105.0" prefWidth="255.0" vgap="5.0">
                                                          <columnConstraints>
                                                             <ColumnConstraints hgrow="SOMETIMES" maxWidth="95.0" minWidth="10.0" prefWidth="85.0" />
                                                             <ColumnConstraints hgrow="SOMETIMES" maxWidth="84.0" minWidth="10.0" prefWidth="81.0" />
@@ -223,13 +223,13 @@
                                                             <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
                                                          </rowConstraints>
                                                          <children>
-                                                            <Label text="mot_num_poles" />
-                                                            <Label text="mot_dc_slope" GridPane.rowIndex="1" />
-                                                            <Label text="mot_dc_accel" GridPane.rowIndex="2" />
+                                                            <Label maxWidth="90.0" minWidth="90.0" prefWidth="90.0" text="mot_num_poles" />
+                                                            <Label maxWidth="90.0" minWidth="90.0" prefWidth="90.0" text="mot_dc_slope" GridPane.rowIndex="1" />
+                                                            <Label maxWidth="90.0" minWidth="90.0" prefWidth="90.0" text="mot_dc_accel" GridPane.rowIndex="2" />
                                                             <TextField id="mot_num_poles_value" fx:id="mot_num_poles_value" maxHeight="25.0" maxWidth="80.0" minHeight="25.0" minWidth="80.0" prefHeight="25.0" prefWidth="80.0" stylesheets="@../css/styles.css" GridPane.columnIndex="1" />
                                                             <TextField id="mot_dc_slope_value" fx:id="mot_dc_slope_value" maxHeight="25.0" maxWidth="80.0" minHeight="25.0" minWidth="80.0" prefHeight="25.0" prefWidth="80.0" stylesheets="@../css/styles.css" GridPane.columnIndex="1" GridPane.rowIndex="1" />
                                                             <TextField id="mot_dc_accel_value" fx:id="mot_dc_accel_value" maxHeight="25.0" maxWidth="80.0" minHeight="25.0" minWidth="80.0" prefHeight="25.0" prefWidth="80.0" stylesheets="@../css/styles.css" GridPane.columnIndex="1" GridPane.rowIndex="2" />
-                                                            <HBox spacing="5.0" GridPane.columnIndex="2">
+                                                            <HBox maxWidth="80.0" minWidth="80.0" prefWidth="80.0" spacing="5.0" GridPane.columnIndex="2">
                                                                <children>
                                                                   <Button id="mot_num_poles_button" fx:id="mot_num_poles_button" mnemonicParsing="false" onAction="#setValue" prefHeight="50.0" prefWidth="50.0" text="Set" GridPane.columnIndex="2">
                                                                      <GridPane.margin>
@@ -242,7 +242,7 @@
                                                                   <Insets left="5.0" />
                                                                </GridPane.margin>
                                                             </HBox>
-                                                            <HBox layoutX="178.0" layoutY="10.0" spacing="5.0" GridPane.columnIndex="2" GridPane.rowIndex="1">
+                                                            <HBox layoutX="178.0" layoutY="10.0" maxWidth="80.0" minWidth="80.0" prefWidth="80.0" spacing="5.0" GridPane.columnIndex="2" GridPane.rowIndex="1">
                                                                <children>
                                                                   <Button id="mot_dc_slope_button" fx:id="mot_dc_slope_button" mnemonicParsing="false" onAction="#setValue" prefHeight="50.0" prefWidth="50.0" text="Set" GridPane.columnIndex="2">
                                                                      <GridPane.margin>
@@ -255,7 +255,7 @@
                                                                   <Insets left="5.0" />
                                                                </GridPane.margin>
                                                             </HBox>
-                                                            <HBox layoutX="178.0" layoutY="47.0" spacing="5.0" GridPane.columnIndex="2" GridPane.rowIndex="2">
+                                                            <HBox layoutX="178.0" layoutY="47.0" maxWidth="80.0" minWidth="80.0" prefWidth="80.0" spacing="5.0" GridPane.columnIndex="2" GridPane.rowIndex="2">
                                                                <children>
                                                                   <Button id="mot_dc_accel_button" fx:id="mot_dc_accel_button" mnemonicParsing="false" onAction="#setValue" prefHeight="50.0" prefWidth="50.0" text="Set" GridPane.columnIndex="2">
                                                                      <GridPane.margin>
@@ -273,7 +273,7 @@
                                                             <Insets />
                                                          </opaqueInsets>
                                                          <VBox.margin>
-                                                            <Insets left="5.0" right="5.0" />
+                                                            <Insets left="2.0" right="2.0" />
                                                          </VBox.margin>
                                                       </GridPane>
                                                    </children>
@@ -353,7 +353,7 @@
                                              <padding>
                                                 <Insets bottom="5.0" />
                                              </padding></Label>
-                                          <GridPane hgap="5.0" prefHeight="175.0" prefWidth="250.0" vgap="5.0">
+                                          <GridPane hgap="5.0" maxWidth="250.0" minWidth="250.0" prefHeight="175.0" prefWidth="250.0" vgap="5.0">
                                              <columnConstraints>
                                                 <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
                                                 <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
@@ -367,9 +367,9 @@
                                                 <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
                                              </rowConstraints>
                                              <children>
-                                                <Label text="mot_pwm_hz" />
-                                                <Label text="ctl_dir" GridPane.rowIndex="1" />
-                                                <Label text="temp_lim" GridPane.rowIndex="2" />
+                                                <Label maxWidth="80.0" minWidth="80.0" prefWidth="80.0" text="mot_pwm_hz" />
+                                                <Label maxWidth="80.0" minWidth="80.0" prefWidth="80.0" text="ctl_dir" GridPane.rowIndex="1" />
+                                                <Label maxWidth="80.0" minWidth="80.0" prefWidth="80.0" text="temp_lim" GridPane.rowIndex="2" />
                                                 <TextField id="mot_pwm_hz_value" fx:id="mot_pwm_hz_value" maxHeight="25.0" maxWidth="80.0" minHeight="25.0" minWidth="80.0" prefHeight="25.0" prefWidth="80.0" stylesheets="@../css/styles.css" GridPane.columnIndex="1" />
                                                 <TextField id="mot_i_max_value" fx:id="mot_i_max_value" maxHeight="25.0" maxWidth="80.0" minHeight="25.0" minWidth="80.0" prefHeight="25.0" prefWidth="80.0" stylesheets="@../css/styles.css" GridPane.columnIndex="1" GridPane.rowIndex="3" />
                                                 <TextField id="temp_lim_value" fx:id="temp_lim_value" maxHeight="25.0" maxWidth="80.0" minHeight="25.0" minWidth="80.0" prefHeight="25.0" prefWidth="80.0" stylesheets="@../css/styles.css" GridPane.columnIndex="1" GridPane.rowIndex="2" />
@@ -379,9 +379,9 @@
                                                       <Insets left="35.0" />
                                                    </GridPane.margin>
                                                 </CheckBox>
-                                                <Label layoutX="10.0" layoutY="89.0" text="mot_i_max" GridPane.rowIndex="3" />
-                                                <Label layoutX="10.0" layoutY="125.0" text="sens_i_scale" GridPane.rowIndex="4" />
-                                                <HBox spacing="5.0" GridPane.columnIndex="2">
+                                                <Label layoutX="10.0" layoutY="89.0" maxWidth="80.0" minWidth="80.0" prefWidth="80.0" text="mot_i_max" GridPane.rowIndex="3" />
+                                                <Label layoutX="10.0" layoutY="125.0" maxWidth="80.0" minWidth="80.0" prefWidth="80.0" text="sens_i_scale" GridPane.rowIndex="4" />
+                                                <HBox maxWidth="80.0" minWidth="80.0" prefWidth="80.0" spacing="5.0" GridPane.columnIndex="2">
                                                    <children>
                                                       <Button id="mot_pwm_hz_button" fx:id="mot_pwm_hz_button" mnemonicParsing="false" onAction="#setValue" prefHeight="50.0" prefWidth="50.0" text="Set" GridPane.columnIndex="2">
                                                          <GridPane.margin>
@@ -394,7 +394,7 @@
                                                       <Insets left="5.0" />
                                                    </padding>
                                                 </HBox>
-                                                <HBox layoutX="176.0" layoutY="10.0" spacing="5.0" GridPane.columnIndex="2" GridPane.rowIndex="1">
+                                                <HBox layoutX="176.0" layoutY="10.0" maxWidth="80.0" minWidth="80.0" prefWidth="80.0" spacing="5.0" GridPane.columnIndex="2" GridPane.rowIndex="1">
                                                    <children>
                                                       <Button id="ctl_dir_button" fx:id="ctl_dir_button" mnemonicParsing="false" onAction="#setValue" prefHeight="50.0" prefWidth="50.0" text="Set" GridPane.columnIndex="2">
                                                          <GridPane.margin>
@@ -407,7 +407,7 @@
                                                       <Insets left="5.0" />
                                                    </padding>
                                                 </HBox>
-                                                <HBox layoutX="10.0" layoutY="10.0" spacing="5.0" GridPane.columnIndex="2" GridPane.rowIndex="2">
+                                                <HBox layoutX="10.0" layoutY="10.0" maxWidth="80.0" minWidth="80.0" prefWidth="80.0" spacing="5.0" GridPane.columnIndex="2" GridPane.rowIndex="2">
                                                    <children>
                                                       <Button id="temp_lim_button" fx:id="temp_lim_button" mnemonicParsing="false" onAction="#setValue" prefHeight="50.0" prefWidth="50.0" text="Set" GridPane.columnIndex="2">
                                                          <GridPane.margin>
@@ -420,7 +420,7 @@
                                                       <Insets left="5.0" />
                                                    </padding>
                                                 </HBox>
-                                                <HBox layoutX="10.0" layoutY="10.0" spacing="5.0" GridPane.columnIndex="2" GridPane.rowIndex="3">
+                                                <HBox layoutX="10.0" layoutY="10.0" maxWidth="80.0" minWidth="80.0" prefWidth="80.0" spacing="5.0" GridPane.columnIndex="2" GridPane.rowIndex="3">
                                                    <children>
                                                       <Button id="mot_i_max_button" fx:id="mot_i_max_button" mnemonicParsing="false" onAction="#setValue" prefHeight="50.0" prefWidth="50.0" text="Set" GridPane.columnIndex="2">
                                                          <GridPane.margin>
@@ -433,7 +433,7 @@
                                                       <Insets left="5.0" />
                                                    </padding>
                                                 </HBox>
-                                                <HBox layoutX="10.0" layoutY="10.0" spacing="5.0" GridPane.columnIndex="2" GridPane.rowIndex="4">
+                                                <HBox layoutX="10.0" layoutY="10.0" maxWidth="80.0" minWidth="80.0" prefWidth="80.0" spacing="5.0" GridPane.columnIndex="2" GridPane.rowIndex="4">
                                                    <children>
                                                       <Button id="sens_i_scale_button" fx:id="sens_i_scale_button" mnemonicParsing="false" onAction="#setValue" prefHeight="50.0" prefWidth="50.0" text="Set" GridPane.columnIndex="2">
                                                          <GridPane.margin>
@@ -451,7 +451,7 @@
                                                 <Insets />
                                              </opaqueInsets>
                                              <VBox.margin>
-                                                <Insets left="5.0" right="5.0" />
+                                                <Insets left="2.0" />
                                              </VBox.margin>
                                           </GridPane>
                                        </children>
@@ -505,7 +505,7 @@
                                           <HBox spacing="10.0">
                                              <children>
                                                 <Button id="dc_arm_button" fx:id="dc_arm_button" mnemonicParsing="false" onAction="#dcArmAction" prefHeight="30.0" prefWidth="70.0" text="dc arm" />
-                                                <Slider id="dc_slider" fx:id="dc_slider" blockIncrement="0.01" majorTickUnit="0.1" max="1.0" min="0.3" minorTickCount="10" prefHeight="50.0" prefWidth="350.0" showTickLabels="true" showTickMarks="true" snapToTicks="true" value="0.3">
+                                                <Slider id="dc_slider" fx:id="dc_slider" blockIncrement="0.01" majorTickUnit="0.1" max="1.0" minorTickCount="10" prefHeight="50.0" prefWidth="350.0" showTickLabels="true" showTickMarks="true" snapToTicks="true">
                                                    <padding>
                                                       <Insets bottom="5.0" top="5.0" />
                                                    </padding>
