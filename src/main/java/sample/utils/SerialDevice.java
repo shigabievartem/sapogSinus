@@ -1,6 +1,5 @@
 package sample.utils;
 
-import com.fasterxml.jackson.databind.node.NullNode;
 import jssc.SerialPort;
 import jssc.SerialPortException;
 import org.jetbrains.annotations.NotNull;
@@ -13,6 +12,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import static java.lang.String.format;
 
@@ -35,6 +35,9 @@ public class SerialDevice {
     private TextArea mainConsole = null;
 
     private boolean readThreadShouldExit = false;
+
+    private Thread readerThread = null;
+    private Thread stat2Thread = null;
 
     public Map<String, Object> getCurrentParamMap() {
         final HashMap<String, Object> integerObjectHashMap = new HashMap<>(currentParamMap);
@@ -70,7 +73,7 @@ public class SerialDevice {
     }
 
 
-    public SerialDevice(@NotNull String name, @NotNull String newDevice) throws SerialPortException {
+    public SerialDevice(@NotNull String name, @NotNull String newDevice) throws IOException {
         // TODO Refactor, inherit from main constructor
         // TODO throw exception
         this.name = name;
@@ -84,17 +87,31 @@ public class SerialDevice {
 
         currentParamMap.put("esc_base", 256);
         currentParamMap.put("esc_index", 0);
-        currentParamMap.put("pwm_enable", false);
+        currentParamMap.put("pwm_enable", 0);
         currentParamMap.put("mot_num_poles", 14);
         currentParamMap.put("mot_dc_slope", 5f);
         currentParamMap.put("mot_dc_accel", 0.09f);
         currentParamMap.put("mot_pwm_hz", 20000);
-        currentParamMap.put("ctl_dir", false);
+        currentParamMap.put("ctl_dir", 0);
         currentParamMap.put("temp_lim", 100);
         currentParamMap.put("mot_i_max", 20);
         currentParamMap.put("sens_i_scale", 1);
-        currentParamMap.put("dc_slider", 0.5f);
-        currentParamMap.put("set_rpm", 99);
+        currentParamMap.put("uavcan_node_id", 0);
+        currentParamMap.put("cmd_ttl_ms", 200);
+        currentParamMap.put("pwm_max_usec", 2000);
+        currentParamMap.put("pwm_min_usec", 1000);
+        currentParamMap.put("mot_pwm_blank", 0.500000);
+        currentParamMap.put("mot_pwm_dt_ns", 600);
+        currentParamMap.put("mot_zc_fails_max", 100);
+        currentParamMap.put("rpmctl_i", 0.001000);
+        currentParamMap.put("rpmctl_d", 0.000000);
+        currentParamMap.put("rpmctl_p", 0.000100);
+        currentParamMap.put("mot_stop_thres", 7);
+        currentParamMap.put("mot_lpf_freq", 20.000000);
+        currentParamMap.put("mot_rpm_min", 1000);
+        currentParamMap.put("mot_spup_vramp_t", 3.000000);
+        currentParamMap.put("mot_v_spinup", 0.500000);
+        currentParamMap.put("mot_v_min", 2.500000);
 
         tryReopen();
     }
@@ -117,22 +134,29 @@ public class SerialDevice {
             System.out.println("Starting serialReader thread");
             StringBuilder lastLine = new StringBuilder();
             while (!readThreadShouldExit && (portState != SerialState.NOT_OPEN)) {
+                if (Thread.currentThread().isInterrupted()) {
+                    return;
+                }
                 byte buffer[];
                 try {
                     if ((buffer = port.readBytes()) != null) {
                         for (byte b : buffer) {
-                            message.append((char) b);
+                            //message.append((char) b);
                             lastLine.append((char) b);
                             if (b == '\n') {
                                 if (!tryExtractStat2(lastLine.toString())) {
-                                    if (!tryExtractParam(lastLine.toString()))
-                                    tryExtractVersion(lastLine.toString());
+                                    if (!tryExtractParam(lastLine.toString())) {
+                                        if (!tryExtractVersion(lastLine.toString())){
+                                            if (!tryExtractCommand(lastLine.toString())) {
+                                                logToConsole(lastLine.toString().getBytes());
+                                            }
+                                        }
+                                    }
                                 }
+                                //message.setLength(0);
                                 lastLine.setLength(0);
                             }
                         }
-                        logToConsole(message.toString().getBytes());
-                        message.setLength(0);
                     }
                 } catch (SerialPortException e) {
                     //logToConsole(e.toString().getBytes());
@@ -140,9 +164,43 @@ public class SerialDevice {
                 }
             }
             System.out.println("Closing serialReader thread");
+            return;
         }
     };
 
+
+
+    Runnable stat2Updater = new Runnable() {
+        public void run() {
+            System.out.println("Starting stat2Updater thread");
+            final byte buffer[] = new String("stat2\r\n").getBytes();
+            while (!readThreadShouldExit && (portState != SerialState.NOT_OPEN)) {
+                if (Thread.currentThread().isInterrupted()) {
+                    return;
+                }
+                try {
+                    tryWriteBytes(buffer);
+                    TimeUnit.MILLISECONDS.sleep(1000);
+                } catch (IOException | InterruptedException e) {
+                    System.out.println(format("Exception in stat2Updater thread: %s", e));
+                }
+            }
+            System.out.println("Closing stat2Updater thread");
+            return;
+        }
+    };
+
+    private boolean tryExtractCommand(String s) {
+        if (
+                    (s.indexOf("ch> stat2\r\n") == 0) ||
+                    (s.indexOf("ch> cfg list\r\n") == 0) ||
+                    (s.indexOf("ch> cfg set ") == 0) ||
+                    (s.indexOf("ch> beep\r\n") == 0)
+        ) {
+            return true;
+        }
+        return false;
+    }
 
     private boolean tryExtractVersion(String s) {
         int idxKey = s.indexOf("io.px4.sapog");
@@ -227,7 +285,7 @@ public class SerialDevice {
         mainConsole = console;
     }
 
-    public void tryReopen() throws SerialPortException {
+    public void tryReopen() throws IOException {
         port = new SerialPort(device);
         int jsscParity = 0;
         switch (parity) {
@@ -243,12 +301,14 @@ public class SerialDevice {
             port.setParams(baudRate, dataBits, stopBits, jsscParity);
             portState = SerialState.IDLE;
             readThreadShouldExit = false;
-            new Thread(serialReader).start();
+            readerThread = new Thread(serialReader);
+            readerThread.start();
+            stat2Thread = new Thread(stat2Updater);
+            stat2Thread.start();
         } catch (SerialPortException e) {
-            LOG.error("Cannot open port {}, retrying in {}ms", getPortSpec(), reopenTimeoutMS, e);
+            LOG.error("Cannot open port {}", getPortSpec());
             readThreadShouldExit = true;
-            //reopenAt = System.currentTimeMillis() + reopenTimeoutMS;
-            throw e;
+            throw new IOException(e.toString());
         }
 
         LOG.info("Device {} is started successfully", getPortSpec());
@@ -288,47 +348,6 @@ public class SerialDevice {
         return device + " " + baudRate + " " + dataBits + parity.name().substring(0, 1) + stopBits;
     }
 
-    public void sendAsync(byte[] bytes) throws SerialPortException {
-        if (port == null) {
-            if (reopenAt < System.currentTimeMillis()) {
-                tryReopen();
-            }
-
-            // Still failed:
-            if (port == null) {
-                return;
-            }
-        }
-
-        boolean success = false;
-
-        try {
-            success = port.writeBytes(bytes);
-
-            if (!success) {
-                LOG.error("Failed to write to {}", getPortSpec());
-            }
-        } catch (SerialPortException e) {
-            if (traceWriteFailures) {
-                LOG.error("Failed to write to {}", getPortSpec(), e);
-            } else {
-                LOG.error("Failed to write to {}", getPortSpec());
-            }
-        }
-
-        if (!success) {
-            LOG.error("Retrying in {}ms...", reopenTimeoutMS);
-
-            try {
-                port.closePort();
-            } catch (SerialPortException ignored) {
-            }
-
-            port = null;
-            reopenAt = System.currentTimeMillis() + reopenTimeoutMS;
-        }
-    }
-
     private boolean isPortBusy() {
         return (portState == SerialState.PARAM_SAVING) || (portState == SerialState.PARAM_LOADING);
     }
@@ -337,7 +356,7 @@ public class SerialDevice {
         if (mainConsole != null) SapogUtils.printDirect(mainConsole, new String(buffer));
     }
 
-    private void tryWriteBytes(byte[] buffer) throws SerialPortException, IOException {
+    private void tryWriteBytes(byte[] buffer) throws IOException {
         try {
             boolean success = port.writeBytes(buffer);
             if (success) {
@@ -351,17 +370,16 @@ public class SerialDevice {
             }
         }
         catch (SerialPortException e) {
-            //TODO do better?
-            throw e;
+            throw new IOException(e.toString());
         }
     }
 
-    public void sendString(String str) throws SerialPortException, IOException {
+    public void sendString(String str) throws IOException {
         if (isPortBusy()) throw new IOException("Port busy with another operation");
         tryWriteBytes(str.concat("\r\n").getBytes());
     }
 
-    public void saveParam(String fieldName, Object value) throws SerialPortException, IOException {
+    public void saveParam(String fieldName, Object value) throws IOException {
         if (isPortBusy()) throw new IOException("Port busy with another operation");
         portState = SerialState.PARAM_SAVING;
         byte[] buffer;
@@ -381,7 +399,7 @@ public class SerialDevice {
         portState = SerialState.PARAM_SAVED;
     }
 
-    private String readLineBlocking() throws SerialPortException {
+    private String readLineBlocking() throws IOException {
         StringBuilder message = new StringBuilder();
         try {
             while (true) {
@@ -399,16 +417,13 @@ public class SerialDevice {
                 }
             }
         }
-        catch (SerialPortException ex) {
-            System.out.println(ex);
-            System.out.println("serialEvent");
+        catch (SerialPortException e) {
+            throw new IOException(e.toString());
         }
-        return "";
     }
 
-    public Object loadParam(String fieldName) throws SerialPortException, IOException {
+    public Object loadParam(String fieldName) throws IOException {
         if (isPortBusy()) throw new IOException("Port busy with another operation");
-        //TODO send param load string
         portState = SerialState.PARAM_LOADING;
         byte[] buffer = String.format("cfg get %s\r\n", fieldName).getBytes();
         tryWriteBytes(buffer);
@@ -423,15 +438,17 @@ public class SerialDevice {
 
     public void close() throws IOException{
         if (port == null) {
-            //TODO throw exception
+            //just do nothing, there is no port
         } else {
             try {
                 readThreadShouldExit = true;
+                if (readerThread != null) readerThread.interrupt();
+                if (stat2Thread != null) stat2Thread.interrupt();
                 port.closePort();
                 portState = SerialState.NOT_OPEN;
             } catch (SerialPortException e) {
                 portState = SerialState.EXCEPTION;
-                //TODO re-throw up
+                throw new IOException(e.toString());
             }
         }
     }

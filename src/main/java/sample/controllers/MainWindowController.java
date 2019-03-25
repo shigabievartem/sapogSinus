@@ -26,6 +26,7 @@ import sample.utils.BackendCaller;
 import sample.utils.SapogUtils;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -332,8 +333,16 @@ public class MainWindowController {
         String variableName = buttonImpl.getFieldName();
 
         System.out.println(format("%s setting value: %s", variableName, currentValue));
-        backendCaller.setValue(variableName, currentValue);
+        try {
+            backendCaller.setValue(variableName, currentValue);
+        } catch (IOException e) {
+            e.printStackTrace();
+            //TODO обработать
+        }
     };
+
+    //TODO обработать IOException, добавить его в заголовок метода backendCaller.sendCommand,
+    //TODO убрать внутреннюю обработку IOException из backendCaller.sendCommand
     private Consumer<ButtonImpl> setRpmButtonAction = (buttonImpl) -> backendCaller.sendCommand(format("rpm %d", (Integer) buttonImpl.getValue()));
 
     private final Consumer<ActionEvent> setValueAction = (event -> {
@@ -434,22 +443,31 @@ public class MainWindowController {
         if (!port_button.getItems().contains(currentPort)) port_button.getItems().add(currentPort);
         try {
             backendCaller.connect(currentPort);
+            print("Successfully connected to port: '%s'", getPort());
+        } catch (IOException e) {
             System.out.println(format("Successfully connected to port: '%s'", getPort()));
-        } catch (SerialPortException e) {
             e.printStackTrace();
             throw new RuntimeException(e);
         }
     };
     private final Runnable disconnectAction = () -> {
         updateConnectionInfo.accept(NO_CONNECTION);
-        backendCaller.disconnect(getPort());
+        try {
+            backendCaller.disconnect();
+        } catch (IOException e) {
+            e.printStackTrace();
+            //TODO обработать
+        }
         System.out.println(format("Controller manually disconnected from port '%s'", getPort()));
     };
 
     private final Consumer<String> sendCommandAction = text -> {
         String serverAnswer;
         try {
-            serverAnswer = CompletableFuture.supplyAsync(() -> backendCaller.sendCommand(text)).exceptionally((e) -> {
+            //TODO обработать IOException, добавить его в заголовок метода backendCaller.sendCommand,
+            //TODO убрать внутреннюю обработку IOException из backendCaller.sendCommand
+            serverAnswer = CompletableFuture.supplyAsync(() ->
+                    backendCaller.sendCommand(text)).exceptionally((e) -> {
                 e.printStackTrace();
                 return null;
             }).get(defaultTimeOut, SECONDS);
@@ -474,8 +492,6 @@ public class MainWindowController {
         SapogUtils.printError(setup_console, e);
         return NO_CONNECTION;
     };
-
-    private final Function<String, Object> getCurrentValueFunction = backendCaller::getCurrentValue;
 
     private final Consumer<ProgressWindowController> progressBarLoadAction = (c) -> {
         LoadAllFromBoardTask task = new LoadAllFromBoardTask(c, buttons);
@@ -619,6 +635,8 @@ public class MainWindowController {
                 System.out.println(format("%s changing value: '%s' -> '%s'", variableName, lastSliderValue, currentValue));
 
                 slider.setDisable(true);
+                //TODO обработать IOException, добавить его в заголовок метода backendCaller.sendCommand,
+                //TODO убрать внутреннюю обработку IOException из backendCaller.sendCommand
                 backendCaller.sendCommand(format("dc %.2f", currentValue));
                 lastSliderValue = currentValue;
                 System.out.println("successfully set value");
@@ -736,17 +754,6 @@ public class MainWindowController {
             props.setProperty(v.getFieldName(), String.valueOf(v.getValue()));
         });
         return props;
-    }
-
-    private Object getCurrentBackValue(String fieldName) {
-        try {
-            CompletableFuture<Object> future = CompletableFuture.supplyAsync(
-                    () -> getCurrentValueFunction.apply(fieldName)).exceptionally(defaultExceptionHandler);
-            return future.get(defaultTimeOut, SECONDS);
-        } catch (InterruptedException | ExecutionException | TimeoutException e) {
-            e.printStackTrace();
-            throw new RuntimeException(e);
-        }
     }
 
     private void startReadDCValues() {
