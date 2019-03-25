@@ -127,6 +127,7 @@ public class BackendCaller {
         if (serial != null) {
             try {
                 serial.close();
+                //TimeUnit.MILLISECONDS.sleep(1000);
             } catch (IOException e) {
                 e.printStackTrace();
             }

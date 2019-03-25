@@ -36,6 +36,8 @@ public class SerialDevice {
 
     private boolean readThreadShouldExit = false;
 
+    private Thread readerThread = null;
+
     public Map<String, Object> getCurrentParamMap() {
         final HashMap<String, Object> integerObjectHashMap = new HashMap<>(currentParamMap);
         return integerObjectHashMap;
@@ -133,6 +135,9 @@ public class SerialDevice {
             System.out.println("Starting serialReader thread");
             StringBuilder lastLine = new StringBuilder();
             while (!readThreadShouldExit && (portState != SerialState.NOT_OPEN)) {
+                if (Thread.currentThread().isInterrupted()) {
+                    return;
+                }
                 byte buffer[];
                 try {
                     if ((buffer = port.readBytes()) != null) {
@@ -160,13 +165,15 @@ public class SerialDevice {
                 }
             }
             System.out.println("Closing serialReader thread");
+            return;
         }
     };
 
     private boolean tryExtractCommand(String s) {
         if (
-                    (s.indexOf("ch2> stat2\r\n") == 0) ||
-                    (s.indexOf("ch2> cfg list\r\n") == 0)
+                    (s.indexOf("ch> stat2\r\n") == 0) ||
+                    (s.indexOf("ch> cfg list\r\n") == 0) ||
+                    (s.indexOf("ch> cfg set ") == 0)
         ) {
             return true;
         }
@@ -272,7 +279,8 @@ public class SerialDevice {
             port.setParams(baudRate, dataBits, stopBits, jsscParity);
             portState = SerialState.IDLE;
             readThreadShouldExit = false;
-            new Thread(serialReader).start();
+            readerThread = new Thread(serialReader);
+            readerThread.start();
         } catch (SerialPortException e) {
             LOG.error("Cannot open port {}, retrying in {}ms", getPortSpec(), reopenTimeoutMS, e);
             readThreadShouldExit = true;
@@ -456,6 +464,7 @@ public class SerialDevice {
         } else {
             try {
                 readThreadShouldExit = true;
+                if (readerThread != null) readerThread.interrupt();
                 port.closePort();
                 portState = SerialState.NOT_OPEN;
             } catch (SerialPortException e) {
