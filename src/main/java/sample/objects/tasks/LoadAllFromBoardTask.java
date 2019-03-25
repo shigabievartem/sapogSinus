@@ -6,6 +6,7 @@ import sample.controllers.ProgressWindowController;
 import sample.objects.ButtonImpl;
 import sample.utils.BackendCaller;
 
+import java.io.IOException;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -17,13 +18,18 @@ import static sample.utils.SapogUtils.*;
  */
 public class LoadAllFromBoardTask extends Task<Void> {
 
-    private final Map<String, Object> currentValues;
+    private Map<String, Object> currentValues = null; //TODO обратите внимание
     private final Map<String, ButtonImpl> buttons;
     private final ProgressWindowController progressWindowController;
 
     public LoadAllFromBoardTask(@NotNull ProgressWindowController progressWindowController, @NotNull Map<String, ButtonImpl> buttons) {
         this.progressWindowController = progressWindowController;
-        this.currentValues = Objects.requireNonNull(BackendCaller.getInstance().getCurrentValues(), "Empty current values!");
+        try {
+            this.currentValues = Objects.requireNonNull(BackendCaller.getInstance().getCurrentValues(), "Empty current values!");
+        } catch (IOException e) {
+            //TODO обработать
+            e.printStackTrace();
+        }
         this.buttons = buttons;
     }
 

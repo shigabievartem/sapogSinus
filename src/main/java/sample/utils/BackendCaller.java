@@ -1,7 +1,6 @@
 package sample.utils;
 
 import javafx.scene.control.TextArea;
-import jssc.SerialPortException;
 import org.jetbrains.annotations.NotNull;
 import sample.objects.ConnectionInfo;
 
@@ -10,7 +9,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
-import static java.lang.String.format;
 import static sample.utils.SapogConst.NO_CONNECTION;
 
 public class BackendCaller {
@@ -39,31 +37,15 @@ public class BackendCaller {
         return localInstance;
     }
 
-//    public synchronized void tellBackSetNewValue() {
-//        double i = 0;
-//        while (i++ < 100000d) {
-//            System.out.print("hey ho");
-//        }
-////        throw new RuntimeException("asdasd");
-//    }
-
-    public synchronized Object getCurrentValue(String fieldName) {
-        System.out.println(format("Loading value for field '%s'", fieldName));
-        try {
-            serial.loadParam(fieldName);
-        } catch (IOException | SerialPortException e) {
-
-        }
+    public synchronized Object getCurrentValue(String fieldName) throws IOException {
+        //System.out.println(format("Loading value for field '%s'", fieldName));
+        serial.loadParam(fieldName);
         return null;
     }
 
-    public synchronized void setValue(String fieldName, Object value) {
-        System.out.println(format("Saving new value '%s' for field '%s'", value, fieldName));
-        try {
-            serial.saveParam(fieldName, value);
-        } catch (IOException | SerialPortException e) {
-            //TODO check connection and change state
-        }
+    public synchronized void setValue(String fieldName, Object value) throws IOException {
+        //System.out.println(format("Saving new value '%s' for field '%s'", value, fieldName));
+        serial.saveParam(fieldName, value);
     }
 
     public synchronized ConnectionInfo checkConnection() {
@@ -73,32 +55,23 @@ public class BackendCaller {
     public synchronized void connect(@NotNull String port) throws IOException {
         Objects.requireNonNull(port, "Empty port!");
         if ((serial == null) || !serial.isOpened()) {
-            try {
-                serial = new SerialDevice("default_port", port);
-                serial.setConsole(mainConsole);
-            } catch (SerialPortException e) {
-                throw new IOException(e);
-            }
+            serial = new SerialDevice("default_port", port);
+            serial.setConsole(mainConsole);
         } else if (serial.isOpened()) {
             //TODO can not open port when it's already open, this is an error?
         }
     }
 
-    //TODO remove port as parameter
-    public synchronized void disconnect(String port) {
+    public synchronized void disconnect() throws IOException {
         if (serial == null) {
-            //TODO throw exception
-        } else try {
+            //TODO throw exception?
+        } else {
             serial.close();
             serial = null;
-            System.out.println("Port closed");
-        } catch (IOException e) {
-            //TODO re-throw up
         }
     }
 
-    //TODO throw IOException
-    public Map<String, Object> getCurrentValues() {
+    public Map<String, Object> getCurrentValues() throws IOException {
         if (serial != null) {
             try {
                 sendCommand("cfg list");
@@ -106,7 +79,7 @@ public class BackendCaller {
                 return serial.getCurrentParamMap();
             } catch (InterruptedException e) {
                 return null;
-                //TODO return smth meaningful
+                //TODO return smth meaningful?
             }
         }
         return null;
@@ -117,27 +90,24 @@ public class BackendCaller {
      * @param text - команда отправленная из консоли
      * @return - ответ, который будет распечатан в консоли. Если строка пустая или null в консоль ничего не попадёт
      */
-    //TODO throw IOException
-    public String sendCommand(String text) {
+    public String sendCommand(String text){
         try {
             serial.sendString(text);
-        } catch (SerialPortException | IOException e) {
-            //TODO throw new IOException(e.toString());
+        } catch (IOException e) {
+            e.printStackTrace();
+            //TODO добавить throws IOException
         }
         return "";
     }
 
     public void closeMainWindow() {
-        //TODO доработать необходимую логику
         if (serial != null) {
             try {
                 serial.close();
-                //TimeUnit.MILLISECONDS.sleep(1000);
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
         System.out.println("Main window closed, back know about it!");
-
     }
 }
