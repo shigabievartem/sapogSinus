@@ -124,7 +124,7 @@ public class SerialDevice {
                 DC,
                 RPM,
                 //TODO добавить версию
-                "version"
+                "sapog-sinus-v1.02"
                 );
     }
 
