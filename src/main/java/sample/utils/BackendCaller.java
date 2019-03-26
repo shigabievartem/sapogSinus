@@ -5,20 +5,23 @@ import org.jetbrains.annotations.NotNull;
 import sample.objects.ConnectionInfo;
 
 import java.io.IOException;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.Arrays;
+import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 
-import static java.lang.String.format;
 import static sample.utils.SapogConst.NO_CONNECTION;
 
 public class BackendCaller {
-
 
     private TextArea mainConsole;
 
     public void setMainConsole(@NotNull TextArea mainConsole) {
         this.mainConsole = mainConsole;
     }
+
+    private SerialDevice serial = null;
+    /* EO All things serial */
 
     private static volatile BackendCaller instance;
 
@@ -35,63 +38,72 @@ public class BackendCaller {
         return localInstance;
     }
 
-    public synchronized void tellBackSetNewValue() {
-        double i = 0;
-        while (i++ < 100000d) {
-            System.out.print("hey ho");
-        }
-//        throw new RuntimeException("asdasd");
-    }
-
-    public synchronized Object getCurrentValue(String fieldName) {
-        return "";
+    public synchronized Object getCurrentValue(String fieldName) throws IOException {
+        //System.out.println(format("Loading value for field '%s'", fieldName));
+        serial.loadParam(fieldName);
+        return null;
     }
 
     public synchronized void setValue(String fieldName, Object value) throws IOException {
-        System.out.println(format("Received new value '%s' for field '%s'", value, fieldName));
+        //System.out.println(format("Saving new value '%s' for field '%s'", value, fieldName));
+        serial.saveParam(fieldName, value);
     }
 
     public synchronized ConnectionInfo checkConnection() {
-        if (connectedPorts.isEmpty()) return NO_CONNECTION; //---
-
-        return new ConnectionInfo(true, 12.3, 15.1, 123.3, 321, "v. 15.1");
+        return (serial == null) ? NO_CONNECTION : serial.getConnectionInfo();
     }
 
-    private volatile Set<String> connectedPorts = ConcurrentHashMap.newKeySet();
-
-    public synchronized void connect(String port) throws IOException {
+    public synchronized void connect(@NotNull String port) throws IOException {
         Objects.requireNonNull(port, "Empty port!");
-        connectedPorts.add(port);
+        if ((serial == null) || !serial.isOpened()) {
+            serial = new SerialDevice("default_port", port);
+            serial.setConsole(mainConsole);
+        } else if (serial.isOpened()) {
+            //TODO can not open port when it's already open, this is an error?
+        }
     }
 
     public synchronized void disconnect() throws IOException {
-        connectedPorts.clear();
+        if (serial == null) {
+            //TODO throw exception?
+        } else {
+            serial.close();
+            serial = null;
+        }
     }
 
     public Map<String, Object> getCurrentValues() throws IOException {
-        Map<String, Object> currentParamMap = new HashMap<>();
-        currentParamMap.put("esc_base", 256);
-        currentParamMap.put("esc_index", 0);
-        currentParamMap.put("pwm_enable", null);
-        currentParamMap.put("mot_num_poles", 14);
-        currentParamMap.put("mot_dc_slope", 5f);
-        currentParamMap.put("mot_dc_accel", 0.09f);
-        currentParamMap.put("mot_pwm_hz", 20000);
-        currentParamMap.put("ctl_dir", false);
-        currentParamMap.put("temp_lim", 100);
-        currentParamMap.put("mot_i_max", 20);
-        currentParamMap.put("sens_i_scale", 1);
-        currentParamMap.put("dc_slider", 0.5d);
-        currentParamMap.put("set_rpm", 900);
-        return currentParamMap;
+        if (serial != null) {
+            try {
+                sendCommand("cfg list");
+                TimeUnit.MILLISECONDS.sleep(2000);
+                return serial.getCurrentParamMap();
+            } catch (InterruptedException e) {
+                return null;
+                //TODO return smth meaningful?
+            }
+        }
+        return null;
     }
 
+    /***
+     * Метод отправки команды
+     * @param text - команда отправленная из консоли
+     * @return - ответ, который будет распечатан в консоли. Если строка пустая или null в консоль ничего не попадёт
+     */
     public String sendCommand(String text) throws IOException {
-        System.out.println(format("back receive command '%s'", text));
-        return format("command '%s' successfully processed", text);
+        serial.sendString(text);
+        return "";
     }
 
     public void closeMainWindow() {
+        if (serial != null) {
+            try {
+                serial.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
         System.out.println("Main window closed, back know about it!");
     }
 
