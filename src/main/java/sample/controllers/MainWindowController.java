@@ -282,7 +282,8 @@ public class MainWindowController {
      */
     @FXML
     public void dcArmAction(ActionEvent event) {
-        CompletableFuture.runAsync(dcArmAction).exceptionally(defaultExceptionHandler).thenRun(() -> setSliderValueImpl(dc_slider));
+        CompletableFuture.runAsync(dcArmAction).exceptionally(defaultExceptionHandler)
+                .thenRun(() -> setSliderValueImpl(dc_slider, true));
     }
 
     /**
@@ -672,12 +673,12 @@ public class MainWindowController {
     /**
      * Реализация передачи измененного параметра со слайдера на бэк
      */
-    private void setSliderValueImpl(Slider slider) {
+    private void setSliderValueImpl(Slider slider, boolean isForce) {
         CompletableFuture.runAsync(() -> {
             if (isBlankOrNull((dc_info.getText()))) return; //---
 
             Double currentValue = roundDoubleValue(slider.getValue());
-            if (lastSliderValue != null && lastSliderValue.equals(currentValue)) return; //---
+            if (lastSliderValue != null && (!isForce && lastSliderValue.equals(currentValue))) return; //---
 
             String variableName = slider.getId();
 
@@ -811,7 +812,7 @@ public class MainWindowController {
         dcValueReader.scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
-                setSliderValueImpl(dc_slider);
+                setSliderValueImpl(dc_slider, false);
             }
         }, 0, sliderFrequency);
     }
