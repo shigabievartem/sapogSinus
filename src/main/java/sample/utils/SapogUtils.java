@@ -15,8 +15,10 @@ import javafx.stage.Window;
 import java.io.*;
 import java.net.URL;
 import java.text.DecimalFormat;
+import java.text.NumberFormat;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
@@ -29,12 +31,9 @@ import static sample.utils.SapogConst.Events.closeModalWindow;
 
 public class SapogUtils {
 
-    private static final DecimalFormat decimalFormat;
     private static final DateTimeFormatter dateTimeFormatter;
 
     static {
-        decimalFormat = new DecimalFormat("##.##");
-        decimalFormat.setMinimumIntegerDigits(2);
         dateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss");
     }
 
@@ -197,7 +196,10 @@ public class SapogUtils {
     }
 
     public static String formatDecimalValue(Object value) {
-        return decimalFormat.format(value);
+        NumberFormat nf = NumberFormat.getNumberInstance(Locale.US);
+        DecimalFormat formatter = (DecimalFormat)nf;
+        formatter.applyPattern("#.##");
+        return formatter.format(value);
     }
 
     /**
