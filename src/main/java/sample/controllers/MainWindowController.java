@@ -634,11 +634,11 @@ public class MainWindowController {
         mot_num_poles_value.setTextFormatter(new TextFormatter(new IntegerFilter(true, 2, 100)));
         mot_dc_slope_value.setTextFormatter(new TextFormatter(new DecimalFilter(true, 0.1f, 20f)));
         mot_dc_accel_value.setTextFormatter(new TextFormatter(new DecimalFilter(true, 0.001f, 0.5f)));
-        mot_pwm_hz_value.setTextFormatter(new TextFormatter(new IntegerFilter(true, 2000, 75000)));
+        mot_pwm_hz_value.setTextFormatter(new TextFormatter(new IntegerFilter(true, 6000, 30000)));
         temp_lim_value.setTextFormatter(new TextFormatter(new IntegerFilter(true, 90, 150)));
         mot_i_max_value.setTextFormatter(new TextFormatter(new DecimalFilter(true, 1f, 60f)));
-        sens_i_scale_value.setTextFormatter(new TextFormatter(new DecimalFilter(true, 0f, 1000000f)));
-        set_rpm_value.setTextFormatter(new TextFormatter(new IntegerFilter(true, 900, 5000)));
+        sens_i_scale_value.setTextFormatter(new TextFormatter(new DecimalFilter(true, 0f, 10f)));
+        set_rpm_value.setTextFormatter(new TextFormatter(new IntegerFilter(true, 000, 5000)));
     }
 
     /**
@@ -685,7 +685,7 @@ public class MainWindowController {
                 System.out.println(format("%s changing value: '%s' -> '%s'", variableName, lastSliderValue, currentValue));
 
                 slider.setDisable(true);
-                backendCaller.sendCommand(format("dc %s", formatDecimalValue(currentValue)));
+                backendCaller.sendCommand(format(Locale.US, "dc %s", formatDecimalValue(currentValue)));
                 lastSliderValue = currentValue;
                 System.out.println("successfully set value");
             } catch (IOException e) {
