@@ -254,7 +254,7 @@ public class MainWindowController {
     }
 
     /**
-     * Метод рвёт коннект с контроллером
+     * Перезагружает контроллер
      */
     @FXML
     public void reboot(ActionEvent event) {
@@ -262,15 +262,17 @@ public class MainWindowController {
     }
 
     /**
-     * Метод рвёт коннект с контроллером
+     * Вводит в режим boot loader'a
      */
     @FXML
     public void boot(ActionEvent event) {
-        CompletableFuture.runAsync(bootAction).exceptionally(defaultExceptionHandler).thenRun(disconnectAction);
+        CompletableFuture.runAsync(() -> bootDriverAction.accept(event))
+                .exceptionally(defaultExceptionHandler)
+                .thenRun(disconnectAction);
     }
 
     /**
-     * Метод рвёт коннект с контроллером
+     * Отправляет команду beep
      */
     @FXML
     public void beep(ActionEvent event) {
@@ -278,7 +280,7 @@ public class MainWindowController {
     }
 
     /**
-     * Метод рвёт коннект с контроллером
+     * Передает параметр dc arm
      */
     @FXML
     public void dcArmAction(ActionEvent event) {
@@ -287,7 +289,7 @@ public class MainWindowController {
     }
 
     /**
-     * Метод рвёт коннект с контроллером
+     * Передает параметр rpm arm
      */
     @FXML
     public void rpmArmAction(ActionEvent event) {
@@ -295,7 +297,7 @@ public class MainWindowController {
     }
 
     /**
-     * Метод устанавливает все текущие значения с формы
+     * Метод загружает текущую конфигурацию с платы и устанавливает значения на форму
      */
     @FXML
     public void loadAllFromBoard(ActionEvent event) {
@@ -303,7 +305,7 @@ public class MainWindowController {
     }
 
     /**
-     * Метод устанавливает все текущие значения с формы
+     * Метод собирает параметры с формы и устанавливает их на плату
      */
     @FXML
     public void setAllToBoard(ActionEvent event) {
@@ -311,7 +313,7 @@ public class MainWindowController {
     }
 
     /**
-     * Метод устанавливает все текущие значения с формы
+     * Метод сохраняет конфиг в файл
      */
     @FXML
     public void saveConfigToFile(ActionEvent event) {
@@ -319,7 +321,7 @@ public class MainWindowController {
     }
 
     /**
-     * Метод устанавливает все текущие значения с формы
+     * Метод загружает конфиг из файла
      */
     @FXML
     public void loadConfigFromFile(ActionEvent event) {
@@ -327,7 +329,7 @@ public class MainWindowController {
     }
 
     /**
-     * Метод устанавливает все текущие значения с формы
+     * Метод загружает дефолтную конфигурацию
      */
     @FXML
     public void loadDefaultConfig(ActionEvent event) {
@@ -500,13 +502,33 @@ public class MainWindowController {
     };
 
     private final Runnable rebootAction = () -> sendCommandAction.accept("reboot");
-    private final Runnable bootAction = () -> sendCommandAction.accept("boot");
     private final Runnable beepAction = () -> sendCommandAction.accept("beep");
+    private final Runnable bootAction = () -> sendCommandAction.accept("boot");
     private final Runnable dcArmAction = () -> sendCommandAction.accept("dc arm");
     private final Runnable rpmArmAction = () -> sendCommandAction.accept("rpm arm");
     private final Function<Throwable, ? extends Void> defaultExceptionHandler = ex -> {
         ex.printStackTrace();
         return null;
+    };
+
+    /* Комманды для работы с платой */
+    private final Supplier<Byte[]> readDeviceAction = () -> {
+        sendCommandAction.accept("0x11+0xEE");
+
+        // TODO доделать
+
+        //TODO вернуть реальный результат
+        return new Byte[0];
+    };
+    // TODO реализовать
+    private final Supplier<Boolean> eraseDeviceAction = () -> {
+
+        return true;
+    };
+    // TODO реализовать
+    private final Function<File, Boolean> writeDeviceAction = (file) -> {
+
+        return true;
     };
 
     private final Consumer<ProgressWindowController> progressBarLoadAction = (c) -> {
@@ -557,7 +579,7 @@ public class MainWindowController {
     private final Consumer<ActionEvent> setAllToBoardAction = event -> showModalWindow("Setting parameters...", progressWindowConfigLocation,
             ((Button) event.getTarget()).getScene().getWindow(), progressBarSaveAction);
 
-    private final Consumer<ActionEvent> saveConfigToFileAction = event -> showFileDialog(true,
+    private final Consumer<ActionEvent> saveConfigToFileAction = event -> showPropertiesFile(true,
             ((Button) event.getTarget()).getScene().getWindow(), saveConfigToFileActionConsumer);
 
     private final Consumer<File> parsePropertiesFromFile = file -> {
@@ -571,12 +593,52 @@ public class MainWindowController {
         });
     };
 
-    private final Consumer<ActionEvent> loadConfigFromFileAction = event -> showFileDialog(false,
+    private final Consumer<File> parseDriverFromFile = file -> {
+        // TODO добавить проверку на корректность выбранного файла
+        // Переводим в режим bootloader'a
+        bootAction.run();
+        // Пытаемся считать данные с платы
+        try {
+            CompletableFuture.supplyAsync(readDeviceAction).get(defaultTimeOut, SECONDS);
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException(e);
+        }
+        // Пытаемся удалить данные с платы
+        try {
+            if (!CompletableFuture.supplyAsync(eraseDeviceAction).get(defaultTimeOut, SECONDS))
+                throw new RuntimeException("Не удалось удалить данные с платы!");
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException(e);
+        }
+        // Пытаемся удалить данные с платы
+        try {
+            if (!CompletableFuture.supplyAsync(() -> writeDeviceAction.apply(file)).get(defaultTimeOut, SECONDS))
+                throw new RuntimeException("Не удалось записать данные на плату!");
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException(e);
+        }
+    };
+
+    private final Consumer<ActionEvent> loadConfigFromFileAction = event -> showPropertiesFile(false,
             ((Button) event.getTarget()).getScene().getWindow(), parsePropertiesFromFile);
+
+    //TODO открываем окошко при нажатии на кнопку boot
+    private final Consumer<ActionEvent> bootDriverAction = event -> showDriverFile(false,
+            ((Button) event.getTarget()).getScene().getWindow(), parseDriverFromFile);
 
     private final BiFunction<Void, Throwable, Void> connectionHandler = (voidValue, exception) -> {
         if (exception != null) {
-            SapogUtils.alert(mainElement.getScene().getWindow(), ERROR, "Connection error", null, getSimpleErrorMessage(exception), null);
+            SapogUtils.alert(
+                    mainElement.getScene().getWindow(),
+                    ERROR,
+                    "Connection error",
+                    null,
+                    getSimpleErrorMessage(exception),
+                    null
+            );
         } else {
             updateConnectionStatusAction.run();
 

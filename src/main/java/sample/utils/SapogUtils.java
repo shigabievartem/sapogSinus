@@ -38,13 +38,22 @@ public class SapogUtils {
         dateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss");
     }
 
+    public static synchronized void showPropertiesFile(boolean isSaveAction, @NotNull Window window, Consumer<File> fileHandler) {
+        showFileDialog(isSaveAction, window, fileHandler, new FileChooser.ExtensionFilter("Config file (*.properties)", "*.properties"));
 
-    public static synchronized void showFileDialog(boolean isSaveAction, @NotNull Window window, Consumer<File> fileHandler) {
+    }
+
+    public static synchronized void showDriverFile(boolean isSaveAction, @NotNull Window window, Consumer<File> fileHandler) {
+        // TODO добавить расширение для файла драйвера
+        showFileDialog(isSaveAction, window, fileHandler, new FileChooser.ExtensionFilter("Driver file (*.b)", "*.b"));
+    }
+
+
+    public static synchronized void showFileDialog(boolean isSaveAction, @NotNull Window window, Consumer<File> fileHandler, FileChooser.ExtensionFilter extensionFilter) {
         runInMainThread(() -> {
             FileChooser fileChooser = new FileChooser();
 
-            FileChooser.ExtensionFilter extFilter = new FileChooser.ExtensionFilter("Config file (*.properties)", "*.properties");
-            fileChooser.getExtensionFilters().add(extFilter);
+            fileChooser.getExtensionFilters().add(extensionFilter);
 
             File file = isSaveAction ? fileChooser.showSaveDialog(window) : fileChooser.showOpenDialog(window);
 

@@ -379,6 +379,11 @@ public class SerialDevice {
         tryWriteBytes(str.concat("\r\n").getBytes());
     }
 
+    public void sendBytes(byte[] bytes) throws IOException {
+        if (isPortBusy()) throw new IOException("Port busy with another operation");
+        tryWriteBytes(bytes);
+    }
+
     public void saveParam(String fieldName, Object value) throws IOException {
         if (isPortBusy()) throw new IOException("Port busy with another operation");
         portState = SerialState.PARAM_SAVING;
