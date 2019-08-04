@@ -44,8 +44,7 @@ public class SapogUtils {
     }
 
     public static synchronized void showDriverFile(boolean isSaveAction, @NotNull Window window, Consumer<File> fileHandler) {
-        // TODO добавить расширение для файла драйвера
-        showFileDialog(isSaveAction, window, fileHandler, new FileChooser.ExtensionFilter("Driver file (*.b)", "*.b"));
+        showFileDialog(isSaveAction, window, fileHandler, new FileChooser.ExtensionFilter("Driver file", "*.bin", "*.s19", "*.hex"));
     }
 
 
@@ -253,5 +252,12 @@ public class SapogUtils {
         throwableElement.printStackTrace(new PrintWriter(stackTraceWriter));
         print(console, stackTraceWriter.toString());
         return null; //---
+    }
+
+    public static void printBytes(byte[] bytes) {
+        if (bytes == null || bytes.length == 0) return;
+        for (byte b : bytes) {
+            System.out.println(String.format("0x%02X", b));
+        }
     }
 }

@@ -1,6 +1,7 @@
 package sample.utils;
 
 import javafx.scene.control.TextArea;
+import jssc.SerialPortException;
 import org.jetbrains.annotations.NotNull;
 import sample.objects.ConnectionInfo;
 
@@ -10,7 +11,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
+import static java.lang.String.format;
 import static sample.utils.SapogConst.NO_CONNECTION;
+import static sample.utils.SapogUtils.printBytes;
 
 public class BackendCaller {
 
@@ -92,7 +95,17 @@ public class BackendCaller {
      * @return - ответ, который будет распечатан в консоли. Если строка пустая или null в консоль ничего не попадёт
      */
     public String sendCommand(String text) throws IOException {
+        // TODO удалить лог
+        System.out.println(String.format("received command: %s", text));
         serial.sendString(text);
+        return "";
+    }
+
+    public String sendCommand(byte[] bytes) throws IOException {
+        //TODO удалить логи
+        System.out.println("send bytes:");
+        printBytes(bytes);
+        serial.sendBytes(bytes);
         return "";
     }
 
@@ -109,6 +122,22 @@ public class BackendCaller {
 
     public String[] getPortNames() {
 //        throw new RuntimeException("asdfdasf");
-        return Arrays.asList("port1", "port2", "port3").toArray(new String[0]);
+        // TODO откатить изменения
+        return Arrays.asList("COM4", "port2", "port3").toArray(new String[0]);
+    }
+
+    // Перевод в режим bootloader'a
+    public void bootloaderMode() {
+        System.out.println("Switch device to bootloader mode!");
+        serial.bootloaderMode();
+    }
+
+    public byte[] readDataFromDevice() {
+        try {
+            return Objects.requireNonNull(serial).readData();
+        } catch (SerialPortException e) {
+            System.err.println(format("Exception in serialReader thread: %s", e));
+            return new byte[0];
+        }
     }
 }

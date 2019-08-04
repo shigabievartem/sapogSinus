@@ -1,20 +1,22 @@
 package sample.utils;
 
+import javafx.scene.control.TextArea;
 import jssc.SerialPort;
 import jssc.SerialPortException;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import javafx.scene.control.TextArea;
 import sample.objects.ConnectionInfo;
 
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 import static java.lang.String.format;
+import static sample.utils.SapogUtils.printBytes;
 
 public class SerialDevice {
     private static final Logger LOG = LoggerFactory.getLogger(SerialDevice.class);
@@ -125,7 +127,7 @@ public class SerialDevice {
                 RPM,
                 //TODO добавить версию
                 "version"
-                );
+        );
     }
 
     Runnable serialReader = new Runnable() {
@@ -140,13 +142,15 @@ public class SerialDevice {
                 byte buffer[];
                 try {
                     if ((buffer = port.readBytes()) != null) {
+                        //TODO удалить лог
+//                        printBytes(buffer);
                         for (byte b : buffer) {
                             //message.append((char) b);
                             lastLine.append((char) b);
                             if (b == '\n') {
                                 if (!tryExtractStat2(lastLine.toString())) {
                                     if (!tryExtractParam(lastLine.toString())) {
-                                        if (!tryExtractVersion(lastLine.toString())){
+                                        if (!tryExtractVersion(lastLine.toString())) {
                                             if (!tryExtractCommand(lastLine.toString())) {
                                                 logToConsole(lastLine.toString().getBytes());
                                             }
@@ -169,13 +173,12 @@ public class SerialDevice {
     };
 
 
-
     Runnable stat2Updater = new Runnable() {
         public void run() {
             System.out.println("Starting stat2Updater thread");
             final byte buffer[] = new String("stat2\r\n").getBytes();
             while (!readThreadShouldExit && (portState != SerialState.NOT_OPEN)) {
-                if (Thread.currentThread().isInterrupted()) {
+                if (Thread.currentThread().isInterrupted() || !Thread.currentThread().isAlive()) {
                     return;
                 }
                 try {
@@ -192,10 +195,10 @@ public class SerialDevice {
 
     private boolean tryExtractCommand(String s) {
         if (
-                    (s.indexOf("ch> stat2\r\n") == 0) ||
-                    (s.indexOf("ch> cfg list\r\n") == 0) ||
-                    (s.indexOf("ch> cfg set ") == 0) ||
-                    (s.indexOf("ch> beep\r\n") == 0)
+                (s.indexOf("ch> stat2\r\n") == 0) ||
+                        (s.indexOf("ch> cfg list\r\n") == 0) ||
+                        (s.indexOf("ch> cfg set ") == 0) ||
+                        (s.indexOf("ch> beep\r\n") == 0)
         ) {
             return true;
         }
@@ -246,19 +249,19 @@ public class SerialDevice {
     private boolean tryExtractParam(String s) {
         Iterator it = currentParamMap.entrySet().iterator();
         while (it.hasNext()) {
-            Map.Entry pair = (Map.Entry)it.next();
-            String param = (String)pair.getKey();
+            Map.Entry pair = (Map.Entry) it.next();
+            String param = (String) pair.getKey();
             Object oldVal = pair.getValue();
             int idxKey = s.indexOf(param);
             int idxBracket = s.indexOf("[");
             int idxEq = s.indexOf("=");
             if (
                     (idxKey == 0) &&
-                    (idxEq > param.length()) &&
-                    (idxBracket > idxEq + 1)
+                            (idxEq > param.length()) &&
+                            (idxBracket > idxEq + 1)
             ) {
                 String valStr = s.substring(idxEq + 1, idxBracket);
-                valStr = valStr.replaceAll("\\s","");
+                valStr = valStr.replaceAll("\\s", "");
                 //valStr = valStr.replaceAll("\\.",",");
                 try {
                     if (oldVal instanceof Float) {
@@ -289,11 +292,21 @@ public class SerialDevice {
         port = new SerialPort(device);
         int jsscParity = 0;
         switch (parity) {
-            case NONE: jsscParity = SerialPort.PARITY_NONE; break;
-            case ODD: jsscParity = SerialPort.PARITY_ODD; break;
-            case EVEN: jsscParity = SerialPort.PARITY_EVEN; break;
-            case MARK: jsscParity = SerialPort.PARITY_MARK; break;
-            case SPACE: jsscParity = SerialPort.PARITY_SPACE; break;
+            case NONE:
+                jsscParity = SerialPort.PARITY_NONE;
+                break;
+            case ODD:
+                jsscParity = SerialPort.PARITY_ODD;
+                break;
+            case EVEN:
+                jsscParity = SerialPort.PARITY_EVEN;
+                break;
+            case MARK:
+                jsscParity = SerialPort.PARITY_MARK;
+                break;
+            case SPACE:
+                jsscParity = SerialPort.PARITY_SPACE;
+                break;
         }
 
         try {
@@ -315,9 +328,36 @@ public class SerialDevice {
         reopenAt = 0;
     }
 
-    public SerialState getPortState(){
+    public SerialState getPortState() {
         SerialState portState = this.portState;
         return portState;
+    }
+
+    public void bootloaderMode() {
+        if (port == null || !port.isOpened()) {
+            LOG.warn("Failed to switch device in bootloader mode.");
+            return;
+        }
+        // Перестаем постоянно читать сообщения с платы, тк будет ждать конкретные ответы после отправки комманд
+        readThreadShouldExit = true;
+        if (readerThread != null) {
+            readerThread.interrupt();
+            try {
+                readerThread.join();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+        if (stat2Thread != null) {
+            stat2Thread.interrupt();
+            try {
+                stat2Thread.join();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+
+        System.out.println("Device successfully switched to bootloader mode!");
     }
 
     public String getName() {
@@ -356,8 +396,13 @@ public class SerialDevice {
         if (mainConsole != null) SapogUtils.printDirect(mainConsole, new String(buffer));
     }
 
-    private void tryWriteBytes(byte[] buffer) throws IOException {
+    private synchronized void tryWriteBytes(byte[] buffer) throws IOException {
         try {
+            // TODO удалить логи
+            if (!stat2Thread.isAlive()) {
+                System.out.println("Writing bytes to device:");
+                printBytes(buffer);
+            }
             boolean success = port.writeBytes(buffer);
             if (success) {
                 //logToConsole(buffer);
@@ -368,18 +413,16 @@ public class SerialDevice {
                 port.closePort();
                 throw new IOException(String.format("Failed to write to %s, closing", getPortSpec()));
             }
-        }
-        catch (SerialPortException e) {
+        } catch (SerialPortException e) {
             throw new IOException(e.toString());
         }
     }
 
-    public void sendString(String str) throws IOException {
-        if (isPortBusy()) throw new IOException("Port busy with another operation");
-        tryWriteBytes(str.concat("\r\n").getBytes());
+    public synchronized void sendString(String str) throws IOException {
+        sendBytes(str.concat("\r\n").getBytes());
     }
 
-    public void sendBytes(byte[] bytes) throws IOException {
+    public synchronized void sendBytes(byte[] bytes) throws IOException {
         if (isPortBusy()) throw new IOException("Port busy with another operation");
         tryWriteBytes(bytes);
     }
@@ -391,7 +434,7 @@ public class SerialDevice {
         if (value instanceof Float) {
             buffer = String.format("cfg set %s %.2f\r\n", fieldName, value).getBytes();
         } else if (value instanceof Boolean) {
-            buffer = String.format("cfg set %s %s\r\n", fieldName, (Boolean)value?"true":"false").getBytes();
+            buffer = String.format("cfg set %s %s\r\n", fieldName, (Boolean) value ? "true" : "false").getBytes();
         } else if (value instanceof Integer) {
             buffer = String.format("cfg set %s %d\r\n", fieldName, value).getBytes();
         } else {
@@ -421,8 +464,7 @@ public class SerialDevice {
                     }
                 }
             }
-        }
-        catch (SerialPortException e) {
+        } catch (SerialPortException e) {
             throw new IOException(e.toString());
         }
     }
@@ -441,7 +483,7 @@ public class SerialDevice {
         return (port == null) || port.isOpened();
     }
 
-    public void close() throws IOException{
+    public void close() throws IOException {
         if (port == null) {
             //just do nothing, there is no port
         } else {
@@ -456,5 +498,13 @@ public class SerialDevice {
                 throw new IOException(e.toString());
             }
         }
+    }
+
+    public byte[] readData() throws SerialPortException {
+        LOG.debug("Start reading data from port...");
+        byte[] bytes = Objects.requireNonNull(port).readBytes();
+        printBytes(bytes);
+        return bytes;
+//        return Objects.requireNonNull(port).readBytes();
     }
 }

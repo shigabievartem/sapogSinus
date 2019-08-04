@@ -15,12 +15,13 @@ import javafx.scene.shape.Circle;
 import javafx.stage.Stage;
 import javafx.stage.Window;
 import sample.objects.ButtonImpl;
+import sample.objects.ByteCommands;
 import sample.objects.ConnectionInfo;
 import sample.objects.filters.DecimalFilter;
 import sample.objects.filters.IntegerFilter;
 import sample.objects.tasks.LoadAllFromBoardTask;
 import sample.objects.tasks.SetAllToBoardTask;
-import sample.objects.tasks.UpdateConnectionStatusTimer;
+import sample.objects.tasks.UpdateConnectionStatusScheduler;
 import sample.utils.BackendCaller;
 import sample.utils.SapogUtils;
 
@@ -266,9 +267,18 @@ public class MainWindowController {
      */
     @FXML
     public void boot(ActionEvent event) {
-        CompletableFuture.runAsync(() -> bootDriverAction.accept(event))
+        CompletableFuture.runAsync(bootModeAction)
                 .exceptionally(defaultExceptionHandler)
-                .thenRun(disconnectAction);
+                .thenRun(bootAction)
+                .thenRun(() -> {
+                    try {
+                        CompletableFuture.supplyAsync(readDeviceAction).get(defaultTimeOut, SECONDS);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        throw new RuntimeException(e);
+                    }
+                })
+                .thenRun(() -> bootDriverAction.accept(event));
     }
 
     /**
@@ -408,7 +418,7 @@ public class MainWindowController {
         }
     };
 
-    private final UpdateConnectionStatusTimer updateConnectionStatusTimer = new UpdateConnectionStatusTimer();
+    private final UpdateConnectionStatusScheduler updateConnectionStatusScheduler = new UpdateConnectionStatusScheduler();
 
     private final Timer dcValueReader = new Timer();
 
@@ -418,7 +428,7 @@ public class MainWindowController {
                 if (oldWindow == null && newWindow != null) {
                     newWindow.setOnCloseRequest((windowEvent) -> {
                         backendCaller.closeMainWindow();
-                        updateConnectionStatusTimer.stopTimer();
+                        updateConnectionStatusScheduler.stopScheduler();
                         dcValueReader.cancel();
                         ((Stage) windowEvent.getTarget()).close();
                     });
@@ -429,31 +439,28 @@ public class MainWindowController {
 
     private final Supplier<ConnectionInfo> checkConnectionAction = backendCaller::checkConnection;
 
-    private TimerTask getUpdateConnectionStatusTask() {
-        return new TimerTask() {
-            @Override
-            public void run() {
-                ConnectionInfo info;
-                try {
-                    info = CompletableFuture.supplyAsync(checkConnectionAction).get(defaultTimeOut, SECONDS);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    info = NO_CONNECTION;
-                }
-
-                if (!info.isConnected()) {
-                    mainElement.fireEvent(new Event(connectionLost));
-                }
-
-                updateConnectionInfo.accept(info);
-            }
-        };
-    }
-
     private final Consumer<ConnectionInfo> updateConnectionInfo = info -> {
         updateStatusBar(info);
         recalculateButtonsAvailability(info.isConnected());
-        if (!info.isConnected()) updateConnectionStatusTimer.stop();
+        if (!info.isConnected()) updateConnectionStatusScheduler.stop();
+    };
+
+    private final Runnable updateConnectionStatusTask = () -> {
+        //TODO удалить логи
+        print("check connection");
+        ConnectionInfo info;
+        try {
+            info = CompletableFuture.supplyAsync(checkConnectionAction).get(defaultTimeOut, SECONDS);
+        } catch (Exception e) {
+            e.printStackTrace();
+            info = NO_CONNECTION;
+        }
+
+        if (!info.isConnected()) {
+            mainElement.fireEvent(new Event(connectionLost));
+        }
+
+        updateConnectionInfo.accept(info);
     };
 
     private final Runnable connectAction = () -> {
@@ -479,6 +486,15 @@ public class MainWindowController {
         System.out.println(format("Controller manually disconnected from port '%s'", getPort()));
     };
 
+    /**
+     * Перевод устройства в режим bootloader'a
+     */
+    private final Runnable bootModeAction = () -> {
+        updateConnectionInfo.accept(NO_CONNECTION);
+        backendCaller.bootloaderMode();
+        System.out.println("Controller switched to bootloader mode");
+    };
+
     private final Consumer<String> sendCommandAction = text -> {
         String serverAnswer;
         try {
@@ -486,6 +502,29 @@ public class MainWindowController {
             {
                 try {
                     return backendCaller.sendCommand(text);
+                } catch (IOException e) {
+                    IOExceptionHandler.accept(e);
+                    return null;
+                }
+            }).exceptionally((e) -> {
+                e.printStackTrace();
+                return null;
+            }).get(defaultTimeOut, SECONDS);
+        } catch (InterruptedException | ExecutionException | TimeoutException e) {
+            e.printStackTrace();
+            serverAnswer = null;
+        }
+        if (!isBlankOrNull(serverAnswer)) print(serverAnswer);
+    };
+
+    // TODO переделать с использованием спринга
+    private final Consumer<byte[]> sendBytesAction = bytes -> {
+        String serverAnswer;
+        try {
+            serverAnswer = CompletableFuture.supplyAsync(() ->
+            {
+                try {
+                    return backendCaller.sendCommand(bytes);
                 } catch (IOException e) {
                     IOExceptionHandler.accept(e);
                     return null;
@@ -512,14 +551,39 @@ public class MainWindowController {
     };
 
     /* Комманды для работы с платой */
-    private final Supplier<Byte[]> readDeviceAction = () -> {
-        sendCommandAction.accept("0x11+0xEE");
-
-        // TODO доделать
-
-        //TODO вернуть реальный результат
-        return new Byte[0];
+    private final Supplier<Boolean> readDeviceAction = () -> {
+        // Проверяем версию, установленную на устройстве
+        sendBytesAction.accept(ByteCommands.GET_VERSION.getBytes());
+        while (true) {
+            if (checkBootloaderVersion(backendCaller.readDataFromDevice())) return true;
+        }
     };
+
+    /**
+     * Метод проверяет версию bootloader'a, а заодно и позволяет убедиться, что мы находимся в нужном режиме
+     *
+     * @param dataFromDevice - ответ с контроллера
+     * @return - true, если версия bootloader'a определенна, в противном случае - false
+     */
+    private boolean checkBootloaderVersion(byte[] dataFromDevice) {
+        try {
+            return CompletableFuture.supplyAsync(
+                    () -> {
+                        if (dataFromDevice == null) return false;
+                        System.out.println("Check received data:");
+                        printBytes(dataFromDevice);
+                        if (dataFromDevice.length != 5) return false;
+                        if (!ByteCommands.isAck(dataFromDevice[0])) return false;
+                        System.out.println(String.format("Bootloader version: %s", dataFromDevice[2]));
+                        return true;
+                    }
+            ).get(defaultTimeOut, SECONDS);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
     // TODO реализовать
     private final Supplier<Boolean> eraseDeviceAction = () -> {
 
@@ -594,31 +658,34 @@ public class MainWindowController {
     };
 
     private final Consumer<File> parseDriverFromFile = file -> {
-        // TODO добавить проверку на корректность выбранного файла
-        // Переводим в режим bootloader'a
-        bootAction.run();
         // Пытаемся считать данные с платы
+        // TODO убрать все это
+//        try {
+//            CompletableFuture.supplyAsync(readDeviceAction).get(defaultTimeOut, SECONDS);
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//            throw new RuntimeException(e);
+//        }
+//        // Пытаемся удалить данные с платы
+//        try {
+//            if (!CompletableFuture.supplyAsync(eraseDeviceAction).get(defaultTimeOut, SECONDS))
+//                throw new RuntimeException("Не удалось удалить данные с платы!");
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//            throw new RuntimeException(e);
+//        }
+//        // Пытаемся записать драйвер
+//        try {
+//            if (!CompletableFuture.supplyAsync(() -> writeDeviceAction.apply(file)).get(defaultTimeOut, SECONDS))
+//                throw new RuntimeException("Не удалось записать данные на плату!");
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//            throw new RuntimeException(e);
+//        }
         try {
-            CompletableFuture.supplyAsync(readDeviceAction).get(defaultTimeOut, SECONDS);
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw new RuntimeException(e);
-        }
-        // Пытаемся удалить данные с платы
-        try {
-            if (!CompletableFuture.supplyAsync(eraseDeviceAction).get(defaultTimeOut, SECONDS))
-                throw new RuntimeException("Не удалось удалить данные с платы!");
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw new RuntimeException(e);
-        }
-        // Пытаемся удалить данные с платы
-        try {
-            if (!CompletableFuture.supplyAsync(() -> writeDeviceAction.apply(file)).get(defaultTimeOut, SECONDS))
-                throw new RuntimeException("Не удалось записать данные на плату!");
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw new RuntimeException(e);
+            backendCaller.disconnect();
+        } catch (IOException e) {
+            IOExceptionHandler.accept(e);
         }
     };
 
@@ -806,7 +873,7 @@ public class MainWindowController {
      * Метод проверяет коннект, в случае разрыва коннекта открывается модальное окно с оповещением
      */
     private void updateConnectionStatus() {
-        CompletableFuture.runAsync(() -> updateConnectionStatusTimer.start(getUpdateConnectionStatusTask(), 0, checkConnectionFrequency));
+        CompletableFuture.runAsync(() -> updateConnectionStatusScheduler.start(updateConnectionStatusTask, 0, checkConnectionFrequency));
     }
 
     /**
