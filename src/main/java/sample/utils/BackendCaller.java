@@ -66,6 +66,21 @@ public class BackendCaller {
         }
     }
 
+    /**
+     * Коннект к контроллеру в режиме bootloader'a
+     * <p>
+     * Отдельный метод с рассчетом на то, что возможно параметры подключения будут браться из интерфейса
+     */
+    public synchronized void connectInBootloaderMode(@NotNull String port) throws IOException {
+        Objects.requireNonNull(port, "Empty port!");
+        if ((serial == null) || !serial.isOpened()) {
+            serial = new SerialDevice("bootloader_mode", port, 115200, 8, Parity.NONE, 10, true);
+            serial.setConsole(mainConsole);
+        } else if (serial.isOpened()) {
+            //TODO can not open port when it's already open, this is an error?
+        }
+    }
+
     public synchronized void disconnect() throws IOException {
         if (serial == null) {
             //TODO throw exception?
@@ -126,7 +141,10 @@ public class BackendCaller {
         return Arrays.asList("COM4", "port2", "port3").toArray(new String[0]);
     }
 
-    // Перевод в режим bootloader'a
+    /**
+     * Перевод в режим bootloader'a
+     * TODO если получится создать тновое соединение с устройством, удалить код
+     */
     public void bootloaderMode() {
         System.out.println("Switch device to bootloader mode!");
         serial.bootloaderMode();

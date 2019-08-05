@@ -267,9 +267,12 @@ public class MainWindowController {
      */
     @FXML
     public void boot(ActionEvent event) {
-        CompletableFuture.runAsync(bootModeAction)
+        CompletableFuture.runAsync(bootAction)
                 .exceptionally(defaultExceptionHandler)
-                .thenRun(bootAction)
+                .thenRun(disconnectAction)
+                // TODO создать новое соединение с контроллером
+                .thenRun(connectInBootloaderMode)
+//                .thenRun(bootModeAction)
                 .thenRun(() -> {
                     try {
                         CompletableFuture.supplyAsync(readDeviceAction).get(defaultTimeOut, SECONDS);
@@ -446,8 +449,6 @@ public class MainWindowController {
     };
 
     private final Runnable updateConnectionStatusTask = () -> {
-        //TODO удалить логи
-        print("check connection");
         ConnectionInfo info;
         try {
             info = CompletableFuture.supplyAsync(checkConnectionAction).get(defaultTimeOut, SECONDS);
@@ -476,6 +477,19 @@ public class MainWindowController {
         }
     };
 
+    private final Runnable connectInBootloaderMode = () -> {
+        String currentPort = getPort();
+//         При необходимости можно добавить введёный порт при успешном коннекте
+//        if (!port_button.getItems().contains(currentPort)) port_button.getItems().add(currentPort);
+        try {
+            backendCaller.connectInBootloaderMode(currentPort);
+            System.out.println(format("Successfully connected to port: '%s'", getPort()));
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException(e);
+        }
+    };
+
     private final Runnable disconnectAction = () -> {
         updateConnectionInfo.accept(NO_CONNECTION);
         try {
@@ -488,6 +502,7 @@ public class MainWindowController {
 
     /**
      * Перевод устройства в режим bootloader'a
+     * TODO если получится создать тновое соединение с устройством, удалить код
      */
     private final Runnable bootModeAction = () -> {
         updateConnectionInfo.accept(NO_CONNECTION);
@@ -658,6 +673,7 @@ public class MainWindowController {
     };
 
     private final Consumer<File> parseDriverFromFile = file -> {
+        System.out.println("Обработчик driver'a вызван!");
         // Пытаемся считать данные с платы
         // TODO убрать все это
 //        try {

@@ -59,34 +59,45 @@ public class SerialDevice {
 
     Map<String, Object> currentParamMap = new HashMap<>();
 
-    public SerialDevice(@NotNull String name, @NotNull String newDevice, @NotNull int newBaud) throws IOException, SerialPortException {
+    /**
+     * Конструктор для контроллера
+     *
+     * @param name             - Наименование подключения
+     * @param port             - Порт контроллера
+     * @param newBaud          - Baud rate
+     * @param dataBits         - Data bits
+     * @param parity           - Parity
+     * @param timeout          - timeout в секундах
+     * @param isBootloaderMode - в каком режиме находится контролер: true - в режиме bootloader'a, иначе - false
+     */
+    public SerialDevice(@NotNull String name, @NotNull String port, int newBaud, int dataBits, @NotNull Parity parity, long timeout, boolean isBootloaderMode) throws IOException {
         // TODO Refactor
         // TODO throw exception
         this.name = name;
-        device = newDevice;
-        baudRate = newBaud;
-        dataBits = 8;
-        stopBits = 1;
-        parity = Parity.NONE;
-        reopenTimeoutMS = 1000;
-        traceWriteFailures = true;
+        this.device = port;
+        this.baudRate = newBaud;
+        this.dataBits = dataBits;
+        this.stopBits = 1;
+        this.parity = parity;
+        this.reopenTimeoutMS = timeout * 1000;
+        this.traceWriteFailures = true;
 
-        tryReopen();
+        if (!isBootloaderMode) initializeParamMap();
+
+        tryReopen(isBootloaderMode);
     }
 
 
     public SerialDevice(@NotNull String name, @NotNull String newDevice) throws IOException {
         // TODO Refactor, inherit from main constructor
         // TODO throw exception
-        this.name = name;
-        device = newDevice;
-        baudRate = 115200;
-        dataBits = 8;
-        stopBits = 1;
-        parity = Parity.NONE;
-        reopenTimeoutMS = 1000;
-        traceWriteFailures = true;
+        this(name, newDevice, 115200, 8, Parity.NONE, 1, false);
+    }
 
+    /**
+     * Инициализация мапы с дефолтными параметрами
+     */
+    private void initializeParamMap() {
         currentParamMap.put("esc_base", 256);
         currentParamMap.put("esc_index", 0);
         currentParamMap.put("pwm_enable", 0);
@@ -114,8 +125,6 @@ public class SerialDevice {
         currentParamMap.put("mot_spup_vramp_t", 3.000000);
         currentParamMap.put("mot_v_spinup", 0.500000);
         currentParamMap.put("mot_v_min", 2.500000);
-
-        tryReopen();
     }
 
     public ConnectionInfo getConnectionInfo() {
@@ -288,7 +297,7 @@ public class SerialDevice {
         mainConsole = console;
     }
 
-    public void tryReopen() throws IOException {
+    public void tryReopen(boolean isBootloaderMode) throws IOException {
         port = new SerialPort(device);
         int jsscParity = 0;
         switch (parity) {
@@ -313,11 +322,13 @@ public class SerialDevice {
             port.openPort();
             port.setParams(baudRate, dataBits, stopBits, jsscParity);
             portState = SerialState.IDLE;
-            readThreadShouldExit = false;
-            readerThread = new Thread(serialReader);
-            readerThread.start();
-            stat2Thread = new Thread(stat2Updater);
-            stat2Thread.start();
+            if (!isBootloaderMode) {
+                readThreadShouldExit = false;
+                readerThread = new Thread(serialReader);
+                readerThread.start();
+                stat2Thread = new Thread(stat2Updater);
+                stat2Thread.start();
+            }
         } catch (SerialPortException e) {
             LOG.error("Cannot open port {}", getPortSpec());
             readThreadShouldExit = true;
@@ -333,6 +344,9 @@ public class SerialDevice {
         return portState;
     }
 
+    /**
+     * TODO если получится создать тновое соединение с устройством, удалить код
+     */
     public void bootloaderMode() {
         if (port == null || !port.isOpened()) {
             LOG.warn("Failed to switch device in bootloader mode.");
@@ -340,18 +354,18 @@ public class SerialDevice {
         }
         // Перестаем постоянно читать сообщения с платы, тк будет ждать конкретные ответы после отправки комманд
         readThreadShouldExit = true;
-        if (readerThread != null) {
-            readerThread.interrupt();
-            try {
-                readerThread.join();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
         if (stat2Thread != null) {
             stat2Thread.interrupt();
             try {
                 stat2Thread.join();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+        if (readerThread != null) {
+            readerThread.interrupt();
+            try {
+                readerThread.join();
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -399,10 +413,8 @@ public class SerialDevice {
     private synchronized void tryWriteBytes(byte[] buffer) throws IOException {
         try {
             // TODO удалить логи
-            if (!stat2Thread.isAlive()) {
-                System.out.println("Writing bytes to device:");
-                printBytes(buffer);
-            }
+            System.out.println("Writing bytes to device:");
+            printBytes(buffer);
             boolean success = port.writeBytes(buffer);
             if (success) {
                 //logToConsole(buffer);
