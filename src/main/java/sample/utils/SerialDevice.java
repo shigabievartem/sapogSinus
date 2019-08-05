@@ -3,6 +3,7 @@ package sample.utils;
 import javafx.scene.control.TextArea;
 import jssc.SerialPort;
 import jssc.SerialPortException;
+import jssc.SerialPortTimeoutException;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -515,6 +516,14 @@ public class SerialDevice {
     public byte[] readData() throws SerialPortException {
         LOG.debug("Start reading data from port...");
         byte[] bytes = Objects.requireNonNull(port).readBytes();
+        printBytes(bytes);
+        return bytes;
+//        return Objects.requireNonNull(port).readBytes();
+    }
+
+    public byte[] readData(int byteCount, int timeout) throws SerialPortException, SerialPortTimeoutException {
+        LOG.debug("Start reading data from port...");
+        byte[] bytes = Objects.requireNonNull(port).readBytes(byteCount, timeout);
         printBytes(bytes);
         return bytes;
 //        return Objects.requireNonNull(port).readBytes();

@@ -2,6 +2,7 @@ package sample.utils;
 
 import javafx.scene.control.TextArea;
 import jssc.SerialPortException;
+import jssc.SerialPortTimeoutException;
 import org.jetbrains.annotations.NotNull;
 import sample.objects.ConnectionInfo;
 
@@ -11,7 +12,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
-import static java.lang.String.format;
 import static sample.utils.SapogConst.NO_CONNECTION;
 import static sample.utils.SapogUtils.printBytes;
 
@@ -117,8 +117,6 @@ public class BackendCaller {
     }
 
     public String sendCommand(byte[] bytes) throws IOException {
-        //TODO удалить логи
-        System.out.println("send bytes:");
         printBytes(bytes);
         serial.sendBytes(bytes);
         return "";
@@ -150,12 +148,18 @@ public class BackendCaller {
         serial.bootloaderMode();
     }
 
-    public byte[] readDataFromDevice() {
+    /**
+     * @param byteCount - Минимальное кол-во байт для начала чтения с платы данных
+     * @param timeout   - Максимальное время ожидания
+     * @return - Данные, считанные с платы
+     */
+    public byte[] readDataFromDevice(int byteCount, int timeout) {
         try {
-            return Objects.requireNonNull(serial).readData();
-        } catch (SerialPortException e) {
-            System.err.println(format("Exception in serialReader thread: %s", e));
-            return new byte[0];
+            return Objects.requireNonNull(serial).readData(byteCount, timeout);
+        } catch (SerialPortTimeoutException | SerialPortException e) {
+            System.err.println("Error when read data from device");
+            e.printStackTrace();
+            throw new RuntimeException(e);
         }
     }
 }

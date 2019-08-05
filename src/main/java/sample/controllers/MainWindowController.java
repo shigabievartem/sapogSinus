@@ -275,7 +275,17 @@ public class MainWindowController {
 //                .thenRun(bootModeAction)
                 .thenRun(() -> {
                     try {
-                        CompletableFuture.supplyAsync(readDeviceAction).get(defaultTimeOut, SECONDS);
+                        //TODO отредактировать таймауты
+                        if (!CompletableFuture.supplyAsync(connectToDeviceCommand).get(100, SECONDS))
+                            throw new RuntimeException("Device answer with NACK");
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        throw new RuntimeException(e);
+                    }
+                })
+                .thenRun(() -> {
+                    try {
+                        CompletableFuture.supplyAsync(readDeviceAction).get(100, SECONDS);
                     } catch (Exception e) {
                         e.printStackTrace();
                         throw new RuntimeException(e);
@@ -565,13 +575,20 @@ public class MainWindowController {
         return null;
     };
 
-    /* Комманды для работы с платой */
+    private final static int deviceAnswerTimeout = 30000;
+
+    /* Комманда для начала взаимодействия с платой */
+    private final Supplier<Boolean> connectToDeviceCommand = () -> {
+        // Проверяем версию, установленную на устройстве
+        sendBytesAction.accept(ByteCommands.START_BOOT_COMMAND.getBytes());
+        return checkBootloaderVersion(backendCaller.readDataFromDevice(1, deviceAnswerTimeout));
+    };
+
+    /* Считываем версию драйвера с платы */
     private final Supplier<Boolean> readDeviceAction = () -> {
         // Проверяем версию, установленную на устройстве
         sendBytesAction.accept(ByteCommands.GET_VERSION.getBytes());
-        while (true) {
-            if (checkBootloaderVersion(backendCaller.readDataFromDevice())) return true;
-        }
+        return checkBootloaderVersion(backendCaller.readDataFromDevice(1, deviceAnswerTimeout));
     };
 
     /**

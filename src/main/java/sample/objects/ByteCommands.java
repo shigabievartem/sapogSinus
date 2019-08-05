@@ -3,6 +3,7 @@ package sample.objects;
 import static sample.utils.SapogUtils.printBytes;
 
 public enum ByteCommands {
+    START_BOOT_COMMAND(new byte[]{0x7f}),
     ACK(new byte[]{0x79}),
     NACK(new byte[]{0x1F}),
     GET(new byte[]{0x00, (byte) 0xFF}),
@@ -20,8 +21,6 @@ public enum ByteCommands {
     }
 
     public byte[] getBytes() {
-        System.out.println(String.format("byte command '%s' contain byte code:", this.name()));
-        printBytes(bytes);
         return bytes;
     }
 }
