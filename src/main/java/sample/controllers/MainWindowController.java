@@ -41,6 +41,8 @@ import java.util.function.Supplier;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static javafx.scene.control.Alert.AlertType.ERROR;
+import static sample.objects.ByteCommands.GET_VERSION;
+import static sample.objects.ByteCommands.START_BOOT_COMMAND;
 import static sample.utils.SapogConst.Events.connectionLost;
 import static sample.utils.SapogConst.NO_CONNECTION;
 import static sample.utils.SapogConst.WindowConfigLocations.defaultConfig;
@@ -272,7 +274,6 @@ public class MainWindowController {
                 .thenRun(disconnectAction)
                 // TODO создать новое соединение с контроллером
                 .thenRun(connectInBootloaderMode)
-//                .thenRun(bootModeAction)
                 .thenRun(() -> {
                     try {
                         //TODO отредактировать таймауты
@@ -493,7 +494,9 @@ public class MainWindowController {
 //        if (!port_button.getItems().contains(currentPort)) port_button.getItems().add(currentPort);
         try {
             backendCaller.connectInBootloaderMode(currentPort);
-            System.out.println(format("Successfully connected to port: '%s'", getPort()));
+            System.out.println(format("Successfully connected to port: '%s' in bootloader mode", getPort()));
+            // Раскомментировать для дебага через консольку
+//            setup_console_text_field.setDisable(false);
         } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException(e);
@@ -565,6 +568,24 @@ public class MainWindowController {
         if (!isBlankOrNull(serverAnswer)) print(serverAnswer);
     };
 
+    /**
+     * Пытается распарсить 16-ричное представление бита из полученной строки, чтобы отправить несколько байтов,
+     * просто перечислите их через запятую
+     */
+    private final Consumer<String> sendBytesFromConsoleAction = text -> {
+        try {
+            String[] codeArray = text.split(" ");
+            byte[] byteArray = new byte[codeArray.length];
+            for (int i = 0; i < codeArray.length; i++) {
+                byteArray[i] = (byte) Integer.decode(codeArray[i]).intValue();
+            }
+            sendBytesAction.accept(byteArray);
+        } catch (Exception ex) {
+            System.out.println("Parse byte from input string error.");
+            ex.printStackTrace();
+        }
+    };
+
     private final Runnable rebootAction = () -> sendCommandAction.accept("reboot");
     private final Runnable beepAction = () -> sendCommandAction.accept("beep");
     private final Runnable bootAction = () -> sendCommandAction.accept("boot");
@@ -579,16 +600,21 @@ public class MainWindowController {
 
     /* Комманда для начала взаимодействия с платой */
     private final Supplier<Boolean> connectToDeviceCommand = () -> {
+        try {
+            Thread.sleep(5000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
         // Проверяем версию, установленную на устройстве
-        sendBytesAction.accept(ByteCommands.START_BOOT_COMMAND.getBytes());
-        return checkBootloaderVersion(backendCaller.readDataFromDevice(1, deviceAnswerTimeout));
+        sendBytesAction.accept(START_BOOT_COMMAND.getBytes());
+        return ByteCommands.isAck(backendCaller.readDataFromDevice(START_BOOT_COMMAND.getExpectedBytesCount(), deviceAnswerTimeout)[0]);
     };
 
     /* Считываем версию драйвера с платы */
     private final Supplier<Boolean> readDeviceAction = () -> {
         // Проверяем версию, установленную на устройстве
-        sendBytesAction.accept(ByteCommands.GET_VERSION.getBytes());
-        return checkBootloaderVersion(backendCaller.readDataFromDevice(1, deviceAnswerTimeout));
+        sendBytesAction.accept(GET_VERSION.getBytes());
+        return checkBootloaderVersion(backendCaller.readDataFromDevice(GET_VERSION.getExpectedBytesCount(), deviceAnswerTimeout));
     };
 
     /**
@@ -763,7 +789,11 @@ public class MainWindowController {
                 String text = setup_console_text_field.getText();
                 history.add(text);
                 historyPointer++;
-                sendCommandAction.accept(text);
+                if (keyEvent.isAltDown()) {
+                    sendBytesFromConsoleAction.accept(text);
+                } else {
+                    sendCommandAction.accept(text);
+                }
                 setup_console_text_field.clear();
                 break;
             case UP:

@@ -153,7 +153,8 @@ public class SerialDevice {
                 try {
                     if ((buffer = port.readBytes()) != null) {
                         //TODO удалить лог
-//                        printBytes(buffer);
+                        System.out.println("Bytes from device:");
+                        printBytes(buffer);
                         for (byte b : buffer) {
                             //message.append((char) b);
                             lastLine.append((char) b);
@@ -324,9 +325,11 @@ public class SerialDevice {
             port.setParams(baudRate, dataBits, stopBits, jsscParity);
             portState = SerialState.IDLE;
             if (!isBootloaderMode) {
+                // Для дебага через консольку (общения с контроллером перенести при загрузке bootloader'a)
                 readThreadShouldExit = false;
                 readerThread = new Thread(serialReader);
                 readerThread.start();
+
                 stat2Thread = new Thread(stat2Updater);
                 stat2Thread.start();
             }
