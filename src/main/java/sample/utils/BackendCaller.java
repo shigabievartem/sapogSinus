@@ -74,7 +74,7 @@ public class BackendCaller {
     public synchronized void connectInBootloaderMode(@NotNull String port) throws IOException {
         Objects.requireNonNull(port, "Empty port!");
         if ((serial == null) || !serial.isOpened()) {
-            serial = new SerialDevice("bootloader_mode", port, 115200, 8, Parity.NONE, 10, true);
+            serial = new SerialDevice("bootloader_mode", port, 115200, 8, Parity.EVEN, 10, true);
             serial.setConsole(mainConsole);
         } else if (serial.isOpened()) {
             //TODO can not open port when it's already open, this is an error?
