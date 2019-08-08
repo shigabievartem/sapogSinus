@@ -326,9 +326,7 @@ public class SerialDevice {
             portState = SerialState.IDLE;
             if (!isBootloaderMode) {
                 // Для дебага через консольку (общения с контроллером перенести при загрузке bootloader'a)
-                readThreadShouldExit = false;
-                readerThread = new Thread(serialReader);
-                readerThread.start();
+                startReaderThread();
 
                 stat2Thread = new Thread(stat2Updater);
                 stat2Thread.start();
@@ -343,39 +341,17 @@ public class SerialDevice {
         reopenAt = 0;
     }
 
+    public void startReaderThread(){
+        readThreadShouldExit = false;
+        if (readerThread == null || !readerThread.isAlive()) {
+            readerThread = new Thread(serialReader);
+            readerThread.start();
+        }
+    }
+
     public SerialState getPortState() {
         SerialState portState = this.portState;
         return portState;
-    }
-
-    /**
-     * TODO если получится создать тновое соединение с устройством, удалить код
-     */
-    public void bootloaderMode() {
-        if (port == null || !port.isOpened()) {
-            LOG.warn("Failed to switch device in bootloader mode.");
-            return;
-        }
-        // Перестаем постоянно читать сообщения с платы, тк будет ждать конкретные ответы после отправки комманд
-        readThreadShouldExit = true;
-        if (stat2Thread != null) {
-            stat2Thread.interrupt();
-            try {
-                stat2Thread.join();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-        if (readerThread != null) {
-            readerThread.interrupt();
-            try {
-                readerThread.join();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-
-        System.out.println("Device successfully switched to bootloader mode!");
     }
 
     public String getName() {
@@ -517,18 +493,16 @@ public class SerialDevice {
     }
 
     public byte[] readData() throws SerialPortException {
-        LOG.debug("Start reading data from port...");
+        System.out.println("Start reading data from port...");
         byte[] bytes = Objects.requireNonNull(port).readBytes();
         printBytes(bytes);
         return bytes;
-//        return Objects.requireNonNull(port).readBytes();
     }
 
     public byte[] readData(int byteCount, int timeout) throws SerialPortException, SerialPortTimeoutException {
-        LOG.debug("Start reading data from port...");
         byte[] bytes = Objects.requireNonNull(port).readBytes(byteCount, timeout);
+        System.out.println("Bytes from device");
         printBytes(bytes);
         return bytes;
-//        return Objects.requireNonNull(port).readBytes();
     }
 }

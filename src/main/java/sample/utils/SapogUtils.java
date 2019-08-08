@@ -14,6 +14,7 @@ import javafx.stage.Window;
 
 import java.io.*;
 import java.net.URL;
+import java.nio.file.Files;
 import java.text.DecimalFormat;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -258,6 +259,15 @@ public class SapogUtils {
         if (bytes == null || bytes.length == 0) return;
         for (byte b : bytes) {
             System.out.println(String.format("0x%02X", b));
+        }
+    }
+
+    public static byte[] parseFileToBytesArray(File file) {
+        try {
+            return Files.readAllBytes(file.toPath());
+        } catch (IOException e) {
+            e.printStackTrace();
+            throw new RuntimeException(e);
         }
     }
 }

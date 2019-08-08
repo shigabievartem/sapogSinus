@@ -15,7 +15,6 @@ import javafx.scene.shape.Circle;
 import javafx.stage.Stage;
 import javafx.stage.Window;
 import sample.objects.ButtonImpl;
-import sample.objects.ByteCommands;
 import sample.objects.ConnectionInfo;
 import sample.objects.filters.DecimalFilter;
 import sample.objects.filters.IntegerFilter;
@@ -41,8 +40,7 @@ import java.util.function.Supplier;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static javafx.scene.control.Alert.AlertType.ERROR;
-import static sample.objects.ByteCommands.GET_VERSION;
-import static sample.objects.ByteCommands.START_BOOT_COMMAND;
+import static sample.objects.ByteCommands.*;
 import static sample.utils.SapogConst.Events.connectionLost;
 import static sample.utils.SapogConst.NO_CONNECTION;
 import static sample.utils.SapogConst.WindowConfigLocations.defaultConfig;
@@ -264,6 +262,115 @@ public class MainWindowController {
         CompletableFuture.runAsync(rebootAction).exceptionally(defaultExceptionHandler);
     }
 
+    private final Runnable updateConnectionStatusAction = this::updateConnectionStatus;
+
+    private final Consumer<IOException> IOExceptionHandler = e -> {
+        e.printStackTrace();
+        updateConnectionStatusAction.run();
+    };
+
+    private final static int deviceAnswerTimeout = 30000;
+
+    // TODO переделать с использованием спринга
+    private final Consumer<byte[]> sendBytesAction = bytes -> {
+        String serverAnswer;
+        try {
+            serverAnswer = CompletableFuture.supplyAsync(() ->
+            {
+                try {
+                    return backendCaller.sendCommand(bytes);
+                } catch (IOException e) {
+                    IOExceptionHandler.accept(e);
+                    return null;
+                }
+            }).exceptionally((e) -> {
+                e.printStackTrace();
+                return null;
+            }).get(defaultTimeOut, SECONDS);
+        } catch (InterruptedException | ExecutionException | TimeoutException e) {
+            e.printStackTrace();
+            serverAnswer = null;
+        }
+        if (!isBlankOrNull(serverAnswer)) print(serverAnswer);
+    };
+
+    /* Комманда для начала взаимодействия с платой */
+    private final Supplier<Boolean> connectToDeviceCommand = () -> {
+        try {
+            Thread.sleep(5000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        // Проверяем версию, установленную на устройстве
+        sendBytesAction.accept(START_BOOT_COMMAND.getBytes());
+        return isAck(backendCaller.readDataFromDevice(START_BOOT_COMMAND.getExpectedBytesCount(), deviceAnswerTimeout)[0]);
+    };
+
+    /* Считываем версию драйвера с платы */
+    private final Supplier<Boolean> getDeviceVersionAction = () -> {
+        // Проверяем версию, установленную на устройстве
+        sendBytesAction.accept(GET_VERSION.getBytes());
+        return checkBootloaderVersion(backendCaller.readDataFromDevice(GET_VERSION.getExpectedBytesCount(), deviceAnswerTimeout));
+    };
+
+    /* Глобальная очистка памяти (удаление драйвера) */
+    private final Supplier<Boolean> eraseDeviceAction = () -> {
+        sendBytesAction.accept(ERASE_MEMORY.getBytes());
+        if (!isAck(backendCaller.readDataFromDevice(ERASE_MEMORY.getExpectedBytesCount(), deviceAnswerTimeout)[0]))
+            return false;
+        // Удалим все области памяти, а не конкретные страницы
+        sendBytesAction.accept(ERASE_MEMORY_GLOBAL_ERASE.getBytes());
+        return isAck(backendCaller.readDataFromDevice(ERASE_MEMORY_GLOBAL_ERASE.getExpectedBytesCount(), deviceAnswerTimeout)[0]);
+    };
+
+    // TODO реализовать
+    private final Function<File, Boolean> writeDataToDeviceFunction = (file) -> {
+        sendBytesAction.accept(WRITE_UNPROTECT.getBytes());
+        if (!isAck(backendCaller.readDataFromDevice(WRITE_UNPROTECT.getExpectedBytesCount(), deviceAnswerTimeout)[0]))
+            throw new RuntimeException("RDP is active! Can't execute WRITE command!");
+
+        // TODO понять, что делать дальше и загрузить этот массив байтов на контроллер
+        parseFileToBytesArray(file);
+        return true;
+    };
+
+    private <T> BiFunction<? super T, Throwable, Boolean> prepareBiFunction(Supplier<Boolean> command) {
+        return (value, exc) -> {
+            // Если предыдущая операция прошла не успешно, последующие операции делать не надо
+            if (exc != null) {
+                exc.printStackTrace();
+                return false;
+            }
+            if (value instanceof Boolean && !(Boolean) value) return false;
+            try {
+                return CompletableFuture.supplyAsync(command).get(100, SECONDS);
+            } catch (Exception e) {
+                e.printStackTrace();
+                return false;
+            }
+        };
+    }
+
+    private <T> BiFunction<? super T, Throwable, Boolean> prepareBiFunction(Runnable command) {
+        return prepareBiFunction(() -> {
+            command.run();
+            return true;
+        });
+    }
+
+    /**
+     * Если установить драйвер не удалось, то включаем консольный режим
+     */
+    private final Consumer<Boolean> checkDriverSuccessfullyInstalled = (isSuccess) -> {
+        if (isSuccess) {
+            System.out.println("Driver successfully installed!");
+            return;
+        }
+
+        setup_console_text_field.setDisable(false);
+        backendCaller.activateConsole();
+    };
+
     /**
      * Вводит в режим boot loader'a
      */
@@ -272,27 +379,12 @@ public class MainWindowController {
         CompletableFuture.runAsync(bootAction)
                 .exceptionally(defaultExceptionHandler)
                 .thenRun(disconnectAction)
-                // TODO создать новое соединение с контроллером
                 .thenRun(connectInBootloaderMode)
-                .thenRun(() -> {
-                    try {
-                        //TODO отредактировать таймауты
-                        if (!CompletableFuture.supplyAsync(connectToDeviceCommand).get(100, SECONDS))
-                            throw new RuntimeException("Device answer with NACK");
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                        throw new RuntimeException(e);
-                    }
-                })
-                .thenRun(() -> {
-                    try {
-                        CompletableFuture.supplyAsync(readDeviceAction).get(100, SECONDS);
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                        throw new RuntimeException(e);
-                    }
-                })
-                .thenRun(() -> bootDriverAction.accept(event));
+                .handle(prepareBiFunction(connectToDeviceCommand))
+                .handle(prepareBiFunction(getDeviceVersionAction))
+                .handle(prepareBiFunction(eraseDeviceAction))
+                .handle(prepareBiFunction(() -> bootDriverAction.accept(event)))
+                .thenAccept(checkDriverSuccessfullyInstalled);
     }
 
     /**
@@ -360,12 +452,6 @@ public class MainWindowController {
         CompletableFuture.runAsync(loadDefaultConfigAction).exceptionally(defaultExceptionHandler);
     }
 
-    private final Runnable updateConnectionStatusAction = this::updateConnectionStatus;
-
-    private final Consumer<IOException> IOExceptionHandler = e -> {
-        e.printStackTrace();
-        updateConnectionStatusAction.run();
-    };
 
     private Consumer<ButtonImpl> setButtonAction = (buttonImpl) -> {
         Object currentValue = buttonImpl.getValue();
@@ -495,8 +581,10 @@ public class MainWindowController {
         try {
             backendCaller.connectInBootloaderMode(currentPort);
             System.out.println(format("Successfully connected to port: '%s' in bootloader mode", getPort()));
-            // Раскомментировать для дебага через консольку
-//            setup_console_text_field.setDisable(false);
+
+            port_button.setDisable(true);
+            connect_button.setDisable(true);
+
         } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException(e);
@@ -513,16 +601,6 @@ public class MainWindowController {
         System.out.println(format("Controller manually disconnected from port '%s'", getPort()));
     };
 
-    /**
-     * Перевод устройства в режим bootloader'a
-     * TODO если получится создать тновое соединение с устройством, удалить код
-     */
-    private final Runnable bootModeAction = () -> {
-        updateConnectionInfo.accept(NO_CONNECTION);
-        backendCaller.bootloaderMode();
-        System.out.println("Controller switched to bootloader mode");
-    };
-
     private final Consumer<String> sendCommandAction = text -> {
         String serverAnswer;
         try {
@@ -530,29 +608,6 @@ public class MainWindowController {
             {
                 try {
                     return backendCaller.sendCommand(text);
-                } catch (IOException e) {
-                    IOExceptionHandler.accept(e);
-                    return null;
-                }
-            }).exceptionally((e) -> {
-                e.printStackTrace();
-                return null;
-            }).get(defaultTimeOut, SECONDS);
-        } catch (InterruptedException | ExecutionException | TimeoutException e) {
-            e.printStackTrace();
-            serverAnswer = null;
-        }
-        if (!isBlankOrNull(serverAnswer)) print(serverAnswer);
-    };
-
-    // TODO переделать с использованием спринга
-    private final Consumer<byte[]> sendBytesAction = bytes -> {
-        String serverAnswer;
-        try {
-            serverAnswer = CompletableFuture.supplyAsync(() ->
-            {
-                try {
-                    return backendCaller.sendCommand(bytes);
                 } catch (IOException e) {
                     IOExceptionHandler.accept(e);
                     return null;
@@ -596,27 +651,6 @@ public class MainWindowController {
         return null;
     };
 
-    private final static int deviceAnswerTimeout = 30000;
-
-    /* Комманда для начала взаимодействия с платой */
-    private final Supplier<Boolean> connectToDeviceCommand = () -> {
-        try {
-            Thread.sleep(5000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        // Проверяем версию, установленную на устройстве
-        sendBytesAction.accept(START_BOOT_COMMAND.getBytes());
-        return ByteCommands.isAck(backendCaller.readDataFromDevice(START_BOOT_COMMAND.getExpectedBytesCount(), deviceAnswerTimeout)[0]);
-    };
-
-    /* Считываем версию драйвера с платы */
-    private final Supplier<Boolean> readDeviceAction = () -> {
-        // Проверяем версию, установленную на устройстве
-        sendBytesAction.accept(GET_VERSION.getBytes());
-        return checkBootloaderVersion(backendCaller.readDataFromDevice(GET_VERSION.getExpectedBytesCount(), deviceAnswerTimeout));
-    };
-
     /**
      * Метод проверяет версию bootloader'a, а заодно и позволяет убедиться, что мы находимся в нужном режиме
      *
@@ -631,7 +665,7 @@ public class MainWindowController {
                         System.out.println("Check received data:");
                         printBytes(dataFromDevice);
                         if (dataFromDevice.length != 5) return false;
-                        if (!ByteCommands.isAck(dataFromDevice[0])) return false;
+                        if (!isAck(dataFromDevice[0])) return false;
                         System.out.println(String.format("Bootloader version: %s", dataFromDevice[2]));
                         return true;
                     }
@@ -641,17 +675,6 @@ public class MainWindowController {
             return false;
         }
     }
-
-    // TODO реализовать
-    private final Supplier<Boolean> eraseDeviceAction = () -> {
-
-        return true;
-    };
-    // TODO реализовать
-    private final Function<File, Boolean> writeDeviceAction = (file) -> {
-
-        return true;
-    };
 
     private final Consumer<ProgressWindowController> progressBarLoadAction = (c) -> {
         try {
@@ -719,28 +742,6 @@ public class MainWindowController {
         System.out.println("Обработчик driver'a вызван!");
         // Пытаемся считать данные с платы
         // TODO убрать все это
-//        try {
-//            CompletableFuture.supplyAsync(readDeviceAction).get(defaultTimeOut, SECONDS);
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//            throw new RuntimeException(e);
-//        }
-//        // Пытаемся удалить данные с платы
-//        try {
-//            if (!CompletableFuture.supplyAsync(eraseDeviceAction).get(defaultTimeOut, SECONDS))
-//                throw new RuntimeException("Не удалось удалить данные с платы!");
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//            throw new RuntimeException(e);
-//        }
-//        // Пытаемся записать драйвер
-//        try {
-//            if (!CompletableFuture.supplyAsync(() -> writeDeviceAction.apply(file)).get(defaultTimeOut, SECONDS))
-//                throw new RuntimeException("Не удалось записать данные на плату!");
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//            throw new RuntimeException(e);
-//        }
         try {
             backendCaller.disconnect();
         } catch (IOException e) {
@@ -751,7 +752,6 @@ public class MainWindowController {
     private final Consumer<ActionEvent> loadConfigFromFileAction = event -> showPropertiesFile(false,
             ((Button) event.getTarget()).getScene().getWindow(), parsePropertiesFromFile);
 
-    //TODO открываем окошко при нажатии на кнопку boot
     private final Consumer<ActionEvent> bootDriverAction = event -> showDriverFile(false,
             ((Button) event.getTarget()).getScene().getWindow(), parseDriverFromFile);
 

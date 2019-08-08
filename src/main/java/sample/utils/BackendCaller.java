@@ -81,6 +81,11 @@ public class BackendCaller {
         }
     }
 
+    public synchronized void activateConsole() {
+        if (serial != null && serial.isOpened())
+            serial.startReaderThread();
+    }
+
     public synchronized void disconnect() throws IOException {
         if (serial == null) {
             //TODO throw exception?
@@ -137,15 +142,6 @@ public class BackendCaller {
 //        throw new RuntimeException("asdfdasf");
         // TODO откатить изменения
         return Arrays.asList("COM4", "port2", "port3").toArray(new String[0]);
-    }
-
-    /**
-     * Перевод в режим bootloader'a
-     * TODO если получится создать тновое соединение с устройством, удалить код
-     */
-    public void bootloaderMode() {
-        System.out.println("Switch device to bootloader mode!");
-        serial.bootloaderMode();
     }
 
     /**
