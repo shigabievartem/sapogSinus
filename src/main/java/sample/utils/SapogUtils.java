@@ -270,4 +270,14 @@ public class SapogUtils {
             throw new RuntimeException(e);
         }
     }
+
+    public static byte xorBytes(byte[] bytes) {
+        if (bytes == null || bytes.length < 2) throw new RuntimeException("Nothing to XOR!");
+
+        byte xorResult = bytes[0];
+        for (int i = 1; i < bytes.length; i++) {
+            xorResult ^= bytes[i];
+        }
+        return xorResult;
+    }
 }

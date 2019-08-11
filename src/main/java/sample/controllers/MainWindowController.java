@@ -296,14 +296,16 @@ public class MainWindowController {
 
     /* Комманда для начала взаимодействия с платой */
     private final Supplier<Boolean> connectToDeviceCommand = () -> {
-        try {
-            Thread.sleep(5000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        // Проверяем версию, установленную на устройстве
-        sendBytesAction.accept(START_BOOT_COMMAND.getBytes());
-        return isAck(backendCaller.readDataFromDevice(START_BOOT_COMMAND.getExpectedBytesCount(), deviceAnswerTimeout)[0]);
+        // TODO удалить
+        return false;
+//        try {
+//            Thread.sleep(5000);
+//        } catch (InterruptedException e) {
+//            e.printStackTrace();
+//        }
+//        // Проверяем версию, установленную на устройстве
+//        sendBytesAction.accept(START_BOOT_COMMAND.getBytes());
+//        return isAck(backendCaller.readDataFromDevice(START_BOOT_COMMAND.getExpectedBytesCount(), deviceAnswerTimeout)[0]);
     };
 
     /* Считываем версию драйвера с платы */
@@ -666,7 +668,8 @@ public class MainWindowController {
                         printBytes(dataFromDevice);
                         if (dataFromDevice.length != 5) return false;
                         if (!isAck(dataFromDevice[0])) return false;
-                        System.out.println(String.format("Bootloader version: %s", dataFromDevice[2]));
+                        String message = String.format("Bootloader version: %02X", dataFromDevice[1]);
+                        System.out.println(new StringBuilder(message).insert(message.length() - 1, "."));
                         return true;
                     }
             ).get(defaultTimeOut, SECONDS);

@@ -1,6 +1,7 @@
 package sample.utils;
 
 import javafx.scene.control.TextArea;
+import jssc.SerialPort;
 import jssc.SerialPortException;
 import jssc.SerialPortTimeoutException;
 import org.jetbrains.annotations.NotNull;
@@ -12,6 +13,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
+import static jssc.SerialPort.BAUDRATE_115200;
+import static jssc.SerialPort.DATABITS_8;
 import static sample.utils.SapogConst.NO_CONNECTION;
 import static sample.utils.SapogUtils.printBytes;
 
@@ -74,7 +77,7 @@ public class BackendCaller {
     public synchronized void connectInBootloaderMode(@NotNull String port) throws IOException {
         Objects.requireNonNull(port, "Empty port!");
         if ((serial == null) || !serial.isOpened()) {
-            serial = new SerialDevice("bootloader_mode", port, 115200, 8, Parity.EVEN, 10, true);
+            serial = new SerialDevice("bootloader_mode", port, BAUDRATE_115200, DATABITS_8, Parity.EVEN, 10, true);
             serial.setConsole(mainConsole);
         } else if (serial.isOpened()) {
             //TODO can not open port when it's already open, this is an error?

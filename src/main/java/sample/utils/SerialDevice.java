@@ -78,7 +78,7 @@ public class SerialDevice {
         this.device = port;
         this.baudRate = newBaud;
         this.dataBits = dataBits;
-        this.stopBits = 1;
+        this.stopBits = SerialPort.STOPBITS_1;
         this.parity = parity;
         this.reopenTimeoutMS = timeout * 1000;
         this.traceWriteFailures = true;
@@ -92,7 +92,7 @@ public class SerialDevice {
     public SerialDevice(@NotNull String name, @NotNull String newDevice) throws IOException {
         // TODO Refactor, inherit from main constructor
         // TODO throw exception
-        this(name, newDevice, 115200, 8, Parity.NONE, 1, false);
+        this(name, newDevice, SerialPort.BAUDRATE_115200, SerialPort.DATABITS_8, Parity.NONE, 1, false);
     }
 
     /**
@@ -142,7 +142,7 @@ public class SerialDevice {
 
     Runnable serialReader = new Runnable() {
         public void run() {
-            StringBuilder message = new StringBuilder();
+//            StringBuilder message = new StringBuilder();
             System.out.println("Starting serialReader thread");
             StringBuilder lastLine = new StringBuilder();
             while (!readThreadShouldExit && (portState != SerialState.NOT_OPEN)) {
