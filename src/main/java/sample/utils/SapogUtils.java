@@ -280,4 +280,29 @@ public class SapogUtils {
         }
         return xorResult;
     }
+
+    private static byte[] parsePageNumToBytesArray(int pageNum) {
+        return new byte[]{
+                (byte) ((pageNum >> 24) & 0xFF),
+                (byte) ((pageNum >> 16) & 0xFF),
+                (byte) ((pageNum >> 8) & 0xFF),
+                (byte) (pageNum & 0xFF)
+        };
+    }
+
+    public static byte[] convertPageNumToBytesAndCheckSum(int pageNum) {
+        byte[] byteArray = parsePageNumToBytesArray(pageNum);
+        byte[] resultByteArray = new byte[byteArray.length + 1];
+        for (int i = 0; i < byteArray.length; i++) {
+            resultByteArray[i] = byteArray[i];
+        }
+        resultByteArray[byteArray.length] = xorBytes(byteArray);
+        return resultByteArray;
+    }
+
+    // TODO Есть подозрения, что надо поделить ещё на 2
+    public static int parsePageSizeFromHexValue(int pageSize) {
+        return pageSize / 1024 / 2;
+    }
+
 }

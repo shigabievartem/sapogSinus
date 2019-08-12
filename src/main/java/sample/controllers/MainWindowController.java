@@ -42,7 +42,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static javafx.scene.control.Alert.AlertType.ERROR;
 import static sample.objects.ByteCommands.*;
 import static sample.utils.SapogConst.Events.connectionLost;
-import static sample.utils.SapogConst.NO_CONNECTION;
+import static sample.utils.SapogConst.*;
 import static sample.utils.SapogConst.WindowConfigLocations.defaultConfig;
 import static sample.utils.SapogConst.WindowConfigLocations.progressWindowConfigLocation;
 import static sample.utils.SapogUtils.*;
@@ -296,16 +296,14 @@ public class MainWindowController {
 
     /* Комманда для начала взаимодействия с платой */
     private final Supplier<Boolean> connectToDeviceCommand = () -> {
-        // TODO удалить
-        return false;
-//        try {
-//            Thread.sleep(5000);
-//        } catch (InterruptedException e) {
-//            e.printStackTrace();
-//        }
-//        // Проверяем версию, установленную на устройстве
-//        sendBytesAction.accept(START_BOOT_COMMAND.getBytes());
-//        return isAck(backendCaller.readDataFromDevice(START_BOOT_COMMAND.getExpectedBytesCount(), deviceAnswerTimeout)[0]);
+        try {
+            Thread.sleep(5000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        // Проверяем версию, установленную на устройстве
+        sendBytesAction.accept(START_BOOT_COMMAND.getBytes());
+        return isAck(backendCaller.readDataFromDevice(START_BOOT_COMMAND.getExpectedBytesCount(), deviceAnswerTimeout)[0]);
     };
 
     /* Считываем версию драйвера с платы */
@@ -314,6 +312,59 @@ public class MainWindowController {
         sendBytesAction.accept(GET_VERSION.getBytes());
         return checkBootloaderVersion(backendCaller.readDataFromDevice(GET_VERSION.getExpectedBytesCount(), deviceAnswerTimeout));
     };
+
+    /* Считываем данные с flash памяти */
+    private final Supplier<Boolean> readFlashMemory = () -> {
+        Map<Integer, byte[]> flashMemoryData = new HashMap<>();
+        for (int i = 0; i < parsePageSizeFromHexValue(FLASH_SIZE); i++) {
+            System.out.println(format("read data from page [%s]", i));
+            // Проверяем версию, установленную на устройстве
+            sendBytesAction.accept(READ_MEMORY.getBytes());
+            if (!isAck(backendCaller.readDataFromDevice(READ_MEMORY.getExpectedBytesCount(), deviceAnswerTimeout)[0]))
+                return false;
+
+            try {
+                flashMemoryData.put(i, readPageMemory(i));
+            } catch (Exception ex) {
+                ex.printStackTrace();
+                return false;
+            }
+        }
+
+        System.out.println("Data successfully read from flash memory!");
+
+        flashMemoryData.forEach((pageNum, bytesArray) -> {
+            StringBuilder dataFromPage = new StringBuilder(format("page %s", pageNum));
+            for (byte b : bytesArray) {
+                dataFromPage.append(format(" 0x%02X", b));
+            }
+            System.out.println(dataFromPage);
+        });
+
+        return true;
+    };
+
+    private byte[] readPageMemory(int pageNum) {
+        // Номер страницы рассчитывается из рассчета начальной страницы + шаг страницы * на номер текущей страницы
+        sendBytesAction.accept(convertPageNumToBytesAndCheckSum(FLASH_MEMORY_START_PAGE_BYTE + pageNum * FLASH_MEMORY_PAGE_STEP));
+
+        if (!isAck(backendCaller.readDataFromDevice(1, deviceAnswerTimeout)[0]))
+            throw new RuntimeException(format("Can't read data from page [%s]", pageNum));
+
+        // TODO допилить логику, пока просто переходим в консольку
+        // Отправим кол-во байт для считывания 0<N<256 в 10чной СИ
+        int byteCountToRead = 255;
+        sendBytesAction.accept(
+                new byte[]{
+                        (byte) byteCountToRead,
+                        xorBytes(new byte[]{(byte) byteCountToRead, (byte) 0xFF})
+                }
+        );
+        if (!isAck(backendCaller.readDataFromDevice(1, deviceAnswerTimeout)[0]))
+            throw new RuntimeException(format("Wrong bytes count [%s]", byteCountToRead));
+
+        return backendCaller.readDataFromDevice(byteCountToRead + 1, deviceAnswerTimeout);
+    }
 
     /* Глобальная очистка памяти (удаление драйвера) */
     private final Supplier<Boolean> eraseDeviceAction = () -> {
@@ -384,6 +435,7 @@ public class MainWindowController {
                 .thenRun(connectInBootloaderMode)
                 .handle(prepareBiFunction(connectToDeviceCommand))
                 .handle(prepareBiFunction(getDeviceVersionAction))
+                .handle(prepareBiFunction(readFlashMemory))
                 .handle(prepareBiFunction(eraseDeviceAction))
                 .handle(prepareBiFunction(() -> bootDriverAction.accept(event)))
                 .thenAccept(checkDriverSuccessfullyInstalled);
