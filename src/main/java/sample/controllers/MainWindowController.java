@@ -377,11 +377,11 @@ public class MainWindowController {
     private final Function<File, Boolean> writeDataToDeviceFunction = (file) -> {
         try {
             byte[] fileDataBytes = parseFileToBytesArray(file);
-            // Получим требуемое кол-во страниц для записи данных с файла
-            int requiredPageToWrite = (int) Math.ceil((double) fileDataBytes.length / DEFAULT_BYTE_COUNT_TO_WRITE);
-
             if (fileDataBytes.length > FLASH_SIZE)
                 throw new RuntimeException(format("File size [%s] > flash memory size [%s]", fileDataBytes.length, FLASH_SIZE));
+            // Получим требуемое кол-во страниц для записи данных с файла
+            // TODO разобраться с байтами и страницами
+            int requiredPageToWrite = (int) Math.ceil((double) fileDataBytes.length / DEFAULT_BYTE_COUNT_TO_WRITE);
 
             for (int i = 0; i < requiredPageToWrite; i++) {
                 System.out.println(format("Write data to page[%s]", i));
@@ -416,11 +416,11 @@ public class MainWindowController {
      * TODO потестить плотнее метод
      */
     private byte[] prepareWriteBiteArray(int pageNum, byte[] bytesToWrite) {
-        // +3 тк: 1 место под передаваемое кол-во бай, 2 место под чек-сумму
+        // +2 тк: 1 место под передаваемое кол-во бай, 2 место под чек-сумму
         byte[] resultByteArray = new byte[DEFAULT_BYTE_COUNT_TO_WRITE + 2];
         // Кол-во байтов для контроллера (макс 255)
-        resultByteArray[0] = (byte) DEFAULT_BYTE_COUNT_TO_READ - 1;
-        System.arraycopy(bytesToWrite, pageNum * DEFAULT_BYTE_COUNT_TO_READ, resultByteArray, 1, DEFAULT_BYTE_COUNT_TO_READ);
+        resultByteArray[0] = (byte) DEFAULT_BYTE_COUNT_TO_WRITE - 1;
+        System.arraycopy(bytesToWrite, pageNum * DEFAULT_BYTE_COUNT_TO_WRITE, resultByteArray, 1, DEFAULT_BYTE_COUNT_TO_WRITE);
 
         byte checkSum = xorBytes(resultByteArray);
         resultByteArray[resultByteArray.length - 1] = checkSum;
@@ -477,8 +477,9 @@ public class MainWindowController {
                 .handle(prepareBiFunction(getDeviceVersionAction))
                 .handle(prepareBiFunction(readFlashMemory))
                 .handle(prepareBiFunction(eraseDeviceAction))
-                .handle(prepareBiFunction(readFlashMemory))
+                // TODO Исправить ошибку с многопоточкой, ошибки из процедуры обработки файла не влияют на checkDriver, тк запускается позже из основного потока (Platform.runLater())
                 .handle(prepareBiFunction(() -> bootDriverAction.accept(event)))
+//                .handle(prepareBiFunction(readFlashMemory))
                 .thenAccept(checkDriverSuccessfullyInstalled);
     }
 
