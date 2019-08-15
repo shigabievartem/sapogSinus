@@ -41,8 +41,8 @@ import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static javafx.scene.control.Alert.AlertType.ERROR;
 import static sample.objects.ByteCommands.*;
-import static sample.utils.SapogConst.Events.connectionLost;
 import static sample.utils.SapogConst.*;
+import static sample.utils.SapogConst.Events.connectionLost;
 import static sample.utils.SapogConst.WindowConfigLocations.defaultConfig;
 import static sample.utils.SapogConst.WindowConfigLocations.progressWindowConfigLocation;
 import static sample.utils.SapogUtils.*;
@@ -316,7 +316,7 @@ public class MainWindowController {
     /* Считываем данные с flash памяти */
     private final Supplier<Boolean> readFlashMemory = () -> {
         Map<Integer, byte[]> flashMemoryData = new HashMap<>();
-        for (int i = 0; i < parsePageSizeFromHexValue(FLASH_SIZE); i++) {
+        for (int i = 0; i < FLASH_MAX_PAGE_COUNT; i++) {
             System.out.println(format("read data from page [%s]", i));
             // Проверяем версию, установленную на устройстве
             sendBytesAction.accept(READ_MEMORY.getBytes());
@@ -351,22 +351,19 @@ public class MainWindowController {
         if (!isAck(backendCaller.readDataFromDevice(1, deviceAnswerTimeout)[0]))
             throw new RuntimeException(format("Can't read data from page [%s]", pageNum));
 
-        // TODO допилить логику, пока просто переходим в консольку
-        // Отправим кол-во байт для считывания 0<N<256 в 10чной СИ
-        int byteCountToRead = 255;
         sendBytesAction.accept(
                 new byte[]{
-                        (byte) byteCountToRead,
-                        xorBytes(new byte[]{(byte) byteCountToRead, (byte) 0xFF})
+                        (byte) DEFAULT_BYTE_COUNT_TO_READ,
+                        xorBytes(new byte[]{(byte) DEFAULT_BYTE_COUNT_TO_READ, (byte) 0xFF})
                 }
         );
         if (!isAck(backendCaller.readDataFromDevice(1, deviceAnswerTimeout)[0]))
-            throw new RuntimeException(format("Wrong bytes count [%s]", byteCountToRead));
+            throw new RuntimeException(format("Wrong bytes count [%s]", DEFAULT_BYTE_COUNT_TO_READ));
 
-        return backendCaller.readDataFromDevice(byteCountToRead + 1, deviceAnswerTimeout);
+        return backendCaller.readDataFromDevice(DEFAULT_BYTE_COUNT_TO_READ + 1, deviceAnswerTimeout);
     }
 
-    /* Глобальная очистка памяти (удаление драйвера) */
+    /* Глобальная очистка памяти flash памяти(удаление драйвера) */
     private final Supplier<Boolean> eraseDeviceAction = () -> {
         sendBytesAction.accept(ERASE_MEMORY.getBytes());
         if (!isAck(backendCaller.readDataFromDevice(ERASE_MEMORY.getExpectedBytesCount(), deviceAnswerTimeout)[0]))
@@ -378,14 +375,57 @@ public class MainWindowController {
 
     // TODO реализовать
     private final Function<File, Boolean> writeDataToDeviceFunction = (file) -> {
-        sendBytesAction.accept(WRITE_UNPROTECT.getBytes());
-        if (!isAck(backendCaller.readDataFromDevice(WRITE_UNPROTECT.getExpectedBytesCount(), deviceAnswerTimeout)[0]))
-            throw new RuntimeException("RDP is active! Can't execute WRITE command!");
+        try {
+            byte[] fileDataBytes = parseFileToBytesArray(file);
+            // Получим требуемое кол-во страниц для записи данных с файла
+            int requiredPageToWrite = (int) Math.ceil((double) fileDataBytes.length / DEFAULT_BYTE_COUNT_TO_WRITE);
 
-        // TODO понять, что делать дальше и загрузить этот массив байтов на контроллер
-        parseFileToBytesArray(file);
+            if (fileDataBytes.length > FLASH_SIZE)
+                throw new RuntimeException(format("File size [%s] > flash memory size [%s]", fileDataBytes.length, FLASH_SIZE));
+
+            for (int i = 0; i < requiredPageToWrite; i++) {
+                System.out.println(format("Write data to page[%s]", i));
+                sendBytesAction.accept(WRITE_MEMORY.getBytes());
+                if (!isAck(backendCaller.readDataFromDevice(WRITE_MEMORY.getExpectedBytesCount(), deviceAnswerTimeout)[0]))
+                    return false;
+
+                writePageMemory(i, fileDataBytes);
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            return false;
+        }
         return true;
     };
+
+    private void writePageMemory(int pageNum, byte[] bytesToWrite) {
+        // TODO надо объединить методы записи и чтения, ибо они очень похожи
+        sendBytesAction.accept(convertPageNumToBytesAndCheckSum(FLASH_MEMORY_START_PAGE_BYTE + pageNum * FLASH_MEMORY_PAGE_STEP));
+
+        if (!isAck(backendCaller.readDataFromDevice(1, deviceAnswerTimeout)[0]))
+            throw new RuntimeException(format("Can't write data to page [%s]", pageNum));
+
+        sendBytesAction.accept(prepareWriteBiteArray(pageNum, bytesToWrite));
+
+        if (!isAck(backendCaller.readDataFromDevice(1, deviceAnswerTimeout)[0]))
+            throw new RuntimeException(format("Can't write data to page [%s]. Bad checksum.", pageNum));
+    }
+
+    /**
+     * Записываем все байты которые у нас есть, остальные просто заполняем 0xFF
+     * TODO потестить плотнее метод
+     */
+    private byte[] prepareWriteBiteArray(int pageNum, byte[] bytesToWrite) {
+        // +3 тк: 1 место под передаваемое кол-во бай, 2 место под чек-сумму
+        byte[] resultByteArray = new byte[DEFAULT_BYTE_COUNT_TO_WRITE + 2];
+        // Кол-во байтов для контроллера (макс 255)
+        resultByteArray[0] = (byte) DEFAULT_BYTE_COUNT_TO_READ - 1;
+        System.arraycopy(bytesToWrite, pageNum * DEFAULT_BYTE_COUNT_TO_READ, resultByteArray, 1, DEFAULT_BYTE_COUNT_TO_READ);
+
+        byte checkSum = xorBytes(resultByteArray);
+        resultByteArray[resultByteArray.length - 1] = checkSum;
+        return resultByteArray;
+    }
 
     private <T> BiFunction<? super T, Throwable, Boolean> prepareBiFunction(Supplier<Boolean> command) {
         return (value, exc) -> {
@@ -437,6 +477,7 @@ public class MainWindowController {
                 .handle(prepareBiFunction(getDeviceVersionAction))
                 .handle(prepareBiFunction(readFlashMemory))
                 .handle(prepareBiFunction(eraseDeviceAction))
+                .handle(prepareBiFunction(readFlashMemory))
                 .handle(prepareBiFunction(() -> bootDriverAction.accept(event)))
                 .thenAccept(checkDriverSuccessfullyInstalled);
     }
@@ -793,22 +834,11 @@ public class MainWindowController {
         });
     };
 
-    private final Consumer<File> parseDriverFromFile = file -> {
-        System.out.println("Обработчик driver'a вызван!");
-        // Пытаемся считать данные с платы
-        // TODO убрать все это
-        try {
-            backendCaller.disconnect();
-        } catch (IOException e) {
-            IOExceptionHandler.accept(e);
-        }
-    };
-
     private final Consumer<ActionEvent> loadConfigFromFileAction = event -> showPropertiesFile(false,
             ((Button) event.getTarget()).getScene().getWindow(), parsePropertiesFromFile);
 
     private final Consumer<ActionEvent> bootDriverAction = event -> showDriverFile(false,
-            ((Button) event.getTarget()).getScene().getWindow(), parseDriverFromFile);
+            ((Button) event.getTarget()).getScene().getWindow(), writeDataToDeviceFunction::apply);
 
     private final BiFunction<Void, Throwable, Void> connectionHandler = (voidValue, exception) -> {
         if (exception != null) {

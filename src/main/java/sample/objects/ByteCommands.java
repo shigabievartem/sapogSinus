@@ -19,10 +19,10 @@ public enum ByteCommands {
     // Комманды для считывания данных с контроллера
     READ_MEMORY(new byte[]{0x11, (byte) 0xEE}, 1),
     // Комманды для очистки памяти
-    ERASE_MEMORY(new byte[]{0x43, (byte) 0xBC}, 1),
-    ERASE_MEMORY_GLOBAL_ERASE(new byte[]{(byte) 0xFF, 0x00}, 1),
+    ERASE_MEMORY(new byte[]{0x44, (byte) 0xBB}, 1),
+    ERASE_MEMORY_GLOBAL_ERASE(new byte[]{(byte) 0xFF, (byte) 0xFF, 0x00}, 1),
     // Команды для записи данных на контроллер
-    WRITE_UNPROTECT(new byte[]{0x31, (byte) 0xCE}, 1);
+    WRITE_MEMORY(new byte[]{0x31, (byte) 0xCE}, 1);
 
     // Байты из которых состоит комманда для контроллера
     private byte[] bytes;

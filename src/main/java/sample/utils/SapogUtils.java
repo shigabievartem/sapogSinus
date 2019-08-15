@@ -300,9 +300,4 @@ public class SapogUtils {
         return resultByteArray;
     }
 
-    // TODO Есть подозрения, что надо поделить ещё на 2
-    public static int parsePageSizeFromHexValue(int pageSize) {
-        return pageSize / 1024 / 2;
-    }
-
 }
