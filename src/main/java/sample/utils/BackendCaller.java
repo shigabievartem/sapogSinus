@@ -125,7 +125,6 @@ public class BackendCaller {
     }
 
     public String sendCommand(byte[] bytes) throws IOException {
-        printBytes(bytes);
         serial.sendBytes(bytes);
         return "";
     }

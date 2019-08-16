@@ -379,17 +379,21 @@ public class MainWindowController {
             byte[] fileDataBytes = parseFileToBytesArray(file);
             if (fileDataBytes.length > FLASH_SIZE)
                 throw new RuntimeException(format("File size [%s] > flash memory size [%s]", fileDataBytes.length, FLASH_SIZE));
-            // Получим требуемое кол-во страниц для записи данных с файла
-            // TODO разобраться с байтами и страницами
-            int requiredPageToWrite = (int) Math.ceil((double) fileDataBytes.length / DEFAULT_BYTE_COUNT_TO_WRITE);
 
-            for (int i = 0; i < requiredPageToWrite; i++) {
+            // Дополним байты из файла пустыми значениями, чтобы дальше просто записать их в память
+            byte[] byteArrayToWriteInFlash = new byte[FLASH_SIZE];
+            System.arraycopy(fileDataBytes, 0, byteArrayToWriteInFlash, 0, fileDataBytes.length);
+
+            for (int i = 0; i < FLASH_MAX_PAGE_COUNT; i++) {
                 System.out.println(format("Write data to page[%s]", i));
-                sendBytesAction.accept(WRITE_MEMORY.getBytes());
-                if (!isAck(backendCaller.readDataFromDevice(WRITE_MEMORY.getExpectedBytesCount(), deviceAnswerTimeout)[0]))
-                    return false;
+                for (int j = 0; j < WRITE_FLASH_TIMES_TO_REPEAT; j++) {
 
-                writePageMemory(i, fileDataBytes);
+                    sendBytesAction.accept(WRITE_MEMORY.getBytes());
+                    if (!isAck(backendCaller.readDataFromDevice(WRITE_MEMORY.getExpectedBytesCount(), deviceAnswerTimeout)[0]))
+                        return false;
+
+                    writePageMemory(i, j, byteArrayToWriteInFlash);
+                }
             }
         } catch (Exception ex) {
             ex.printStackTrace();
@@ -398,14 +402,32 @@ public class MainWindowController {
         return true;
     };
 
-    private void writePageMemory(int pageNum, byte[] bytesToWrite) {
+    /**
+     * Если установить драйвер не удалось, то включаем консольный режим
+     */
+    private final Consumer<Boolean> checkDriverSuccessfullyInstalled = (isSuccess) -> {
+        if (isSuccess) {
+            System.out.println("Driver successfully installed!");
+            return;
+        }
+
+        setup_console_text_field.setDisable(false);
+        backendCaller.activateConsole();
+    };
+
+    private final Consumer<File> writeDataToDevice = (file) -> {
+        CompletableFuture.supplyAsync(() -> writeDataToDeviceFunction.apply(file))
+                .thenAccept(checkDriverSuccessfullyInstalled);
+    };
+
+    private void writePageMemory(int pageNum, int time, byte[] bytesToWrite) {
         // TODO надо объединить методы записи и чтения, ибо они очень похожи
-        sendBytesAction.accept(convertPageNumToBytesAndCheckSum(FLASH_MEMORY_START_PAGE_BYTE + pageNum * FLASH_MEMORY_PAGE_STEP));
+        sendBytesAction.accept(convertPageNumToBytesAndCheckSum(FLASH_MEMORY_START_PAGE_BYTE + pageNum * FLASH_MEMORY_PAGE_STEP + time * DEFAULT_BYTE_COUNT_TO_WRITE));
 
         if (!isAck(backendCaller.readDataFromDevice(1, deviceAnswerTimeout)[0]))
             throw new RuntimeException(format("Can't write data to page [%s]", pageNum));
 
-        sendBytesAction.accept(prepareWriteBiteArray(pageNum, bytesToWrite));
+        sendBytesAction.accept(prepareWriteBiteArray(pageNum, time, bytesToWrite));
 
         if (!isAck(backendCaller.readDataFromDevice(1, deviceAnswerTimeout)[0]))
             throw new RuntimeException(format("Can't write data to page [%s]. Bad checksum.", pageNum));
@@ -415,16 +437,25 @@ public class MainWindowController {
      * Записываем все байты которые у нас есть, остальные просто заполняем 0xFF
      * TODO потестить плотнее метод
      */
-    private byte[] prepareWriteBiteArray(int pageNum, byte[] bytesToWrite) {
+    private byte[] prepareWriteBiteArray(int pageNum, int time, byte[] bytesToWrite) {
         // +2 тк: 1 место под передаваемое кол-во бай, 2 место под чек-сумму
         byte[] resultByteArray = new byte[DEFAULT_BYTE_COUNT_TO_WRITE + 2];
         // Кол-во байтов для контроллера (макс 255)
         resultByteArray[0] = (byte) DEFAULT_BYTE_COUNT_TO_WRITE - 1;
-        System.arraycopy(bytesToWrite, pageNum * DEFAULT_BYTE_COUNT_TO_WRITE, resultByteArray, 1, DEFAULT_BYTE_COUNT_TO_WRITE);
+        //
+        // ТК мы ранее дозаполнили массив пустыми байтами, то у байт в массиве хватит, чтобы заполнить всю flash память
+        System.arraycopy(bytesToWrite, calculateStartBytePosition(pageNum, time), resultByteArray, 1, DEFAULT_BYTE_COUNT_TO_WRITE);
 
         byte checkSum = xorBytes(resultByteArray);
         resultByteArray[resultByteArray.length - 1] = checkSum;
         return resultByteArray;
+    }
+
+    /**
+     * Рассчёт стартовой позиции байта в массиве с которой необходимо продолжить запись
+     */
+    private int calculateStartBytePosition(int pageNum, int time) {
+        return pageNum * WRITE_FLASH_TIMES_TO_REPEAT * DEFAULT_BYTE_COUNT_TO_WRITE + time * DEFAULT_BYTE_COUNT_TO_WRITE;
     }
 
     private <T> BiFunction<? super T, Throwable, Boolean> prepareBiFunction(Supplier<Boolean> command) {
@@ -452,19 +483,6 @@ public class MainWindowController {
     }
 
     /**
-     * Если установить драйвер не удалось, то включаем консольный режим
-     */
-    private final Consumer<Boolean> checkDriverSuccessfullyInstalled = (isSuccess) -> {
-        if (isSuccess) {
-            System.out.println("Driver successfully installed!");
-            return;
-        }
-
-        setup_console_text_field.setDisable(false);
-        backendCaller.activateConsole();
-    };
-
-    /**
      * Вводит в режим boot loader'a
      */
     @FXML
@@ -480,6 +498,7 @@ public class MainWindowController {
                 // TODO Исправить ошибку с многопоточкой, ошибки из процедуры обработки файла не влияют на checkDriver, тк запускается позже из основного потока (Platform.runLater())
                 .handle(prepareBiFunction(() -> bootDriverAction.accept(event)))
 //                .handle(prepareBiFunction(readFlashMemory))
+                // TODO исправить чекер, тк тут ещё установка драйвера не завершена
                 .thenAccept(checkDriverSuccessfullyInstalled);
     }
 
@@ -839,7 +858,7 @@ public class MainWindowController {
             ((Button) event.getTarget()).getScene().getWindow(), parsePropertiesFromFile);
 
     private final Consumer<ActionEvent> bootDriverAction = event -> showDriverFile(false,
-            ((Button) event.getTarget()).getScene().getWindow(), writeDataToDeviceFunction::apply);
+            ((Button) event.getTarget()).getScene().getWindow(), writeDataToDevice);
 
     private final BiFunction<Void, Throwable, Void> connectionHandler = (voidValue, exception) -> {
         if (exception != null) {
