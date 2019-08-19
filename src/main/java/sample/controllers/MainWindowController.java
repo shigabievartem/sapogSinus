@@ -636,7 +636,7 @@ public class MainWindowController {
         mot_dc_accel_value.setTextFormatter(new TextFormatter(new DecimalFilter(true, 0.001f, 0.5f)));
         mot_pwm_hz_value.setTextFormatter(new TextFormatter(new IntegerFilter(true, 6000, 30000)));
         temp_lim_value.setTextFormatter(new TextFormatter(new IntegerFilter(true, 90, 150)));
-        mot_i_max_value.setTextFormatter(new TextFormatter(new DecimalFilter(true, 1f, 60f)));
+        mot_i_max_value.setTextFormatter(new TextFormatter(new DecimalFilter(true, 1f, 100f)));
         sens_i_scale_value.setTextFormatter(new TextFormatter(new DecimalFilter(true, 0f, 10f)));
         set_rpm_value.setTextFormatter(new TextFormatter(new IntegerFilter(true, 000, 5000)));
     }
