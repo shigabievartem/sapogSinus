@@ -118,8 +118,6 @@ public class BackendCaller {
      * @return - ответ, который будет распечатан в консоли. Если строка пустая или null в консоль ничего не попадёт
      */
     public String sendCommand(String text) throws IOException {
-        // TODO удалить лог
-        System.out.println(String.format("received command: %s", text));
         serial.sendString(text);
         return "";
     }

@@ -39,6 +39,7 @@ import java.util.function.Supplier;
 
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static javafx.scene.control.Alert.AlertType.CONFIRMATION;
 import static javafx.scene.control.Alert.AlertType.ERROR;
 import static sample.objects.ByteCommands.*;
 import static sample.utils.SapogConst.*;
@@ -184,9 +185,15 @@ public class MainWindowController {
     private Button sett_all_to_board;
     @FXML
     private Button load_all_from_board;
+    @FXML
+    private Button save_config_to_file;
+    @FXML
+    private Button load_config_from_file;
+    @FXML
+    private Button load_default_config;
 
     /**
-     * Мапа с кнопками интерфейса
+     * Мапа с кнопками интерфейса, задающими значения параметров
      */
     private Map<String, ButtonImpl> buttons;
 
@@ -297,7 +304,7 @@ public class MainWindowController {
     /* Комманда для начала взаимодействия с платой */
     private final Supplier<Boolean> connectToDeviceCommand = () -> {
         try {
-            Thread.sleep(5000);
+            Thread.sleep(2500);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
@@ -373,7 +380,9 @@ public class MainWindowController {
         return isAck(backendCaller.readDataFromDevice(ERASE_MEMORY_GLOBAL_ERASE.getExpectedBytesCount(), deviceAnswerTimeout)[0]);
     };
 
-    // TODO реализовать
+    /**
+     * Запись драйвера на контроллер
+     */
     private final Function<File, Boolean> writeDataToDeviceFunction = (file) -> {
         try {
             byte[] fileDataBytes = parseFileToBytesArray(file);
@@ -384,15 +393,19 @@ public class MainWindowController {
             byte[] byteArrayToWriteInFlash = new byte[FLASH_SIZE];
             System.arraycopy(fileDataBytes, 0, byteArrayToWriteInFlash, 0, fileDataBytes.length);
 
-            for (int i = 0; i < FLASH_MAX_PAGE_COUNT; i++) {
-                System.out.println(format("Write data to page[%s]", i));
-                for (int j = 0; j < WRITE_FLASH_TIMES_TO_REPEAT; j++) {
+            for (int pageNum = 0; pageNum < FLASH_MAX_PAGE_COUNT; pageNum++) {
+                System.out.println(format("Write data to page[%s]", pageNum));
+                for (int time = 0; time < WRITE_FLASH_TIMES_TO_REPEAT; time++) {
+
+                    // Проверим, а не закончили ли мы запись драйвера на контроллер
+                    if (fileDataBytes.length < calculateStartBytePosition(pageNum, time))
+                        return true;
 
                     sendBytesAction.accept(WRITE_MEMORY.getBytes());
                     if (!isAck(backendCaller.readDataFromDevice(WRITE_MEMORY.getExpectedBytesCount(), deviceAnswerTimeout)[0]))
                         return false;
 
-                    writePageMemory(i, j, byteArrayToWriteInFlash);
+                    writePageMemory(pageNum, time, byteArrayToWriteInFlash);
                 }
             }
         } catch (Exception ex) {
@@ -403,21 +416,67 @@ public class MainWindowController {
     };
 
     /**
-     * Если установить драйвер не удалось, то включаем консольный режим
+     * Проверяем корректность подготовительных к записи операций, если что-то пошло не так, то включаем консольный режим
      */
-    private final Consumer<Boolean> checkDriverSuccessfullyInstalled = (isSuccess) -> {
+    private final Consumer<Boolean> checkPrepareToWriteOperations = (isSuccess) -> {
         if (isSuccess) {
-            System.out.println("Driver successfully installed!");
             return;
         }
 
+        activateConsole();
+    };
+
+    private final UpdateConnectionStatusScheduler updateConnectionStatusScheduler = new UpdateConnectionStatusScheduler();
+
+    private final Consumer<ConnectionInfo> updateConnectionInfo = info -> {
+        updateStatusBar(info);
+        recalculateButtonsAvailability(info.isConnected());
+        if (!info.isConnected()) updateConnectionStatusScheduler.stop();
+    };
+
+    private final Runnable disconnectAction = () -> {
+        updateConnectionInfo.accept(NO_CONNECTION);
+        try {
+            backendCaller.disconnect();
+        } catch (IOException e) {
+            IOExceptionHandler.accept(e);
+        }
+        System.out.println(format("Controller manually disconnected from port '%s'", getPort()));
+    };
+
+    /**
+     * Проверяем корректность операции записи на устройство, если что-то пошло не так, то включаем консольный режим
+     */
+    private final Consumer<Boolean> checkWriteToControllerOperations = (isSuccess) -> {
+        if (isSuccess) {
+            SapogUtils.alert(
+                    mainElement.getScene().getWindow(),
+                    CONFIRMATION,
+                    "Installation driver status",
+                    null,
+                    format("Driver successfully installed. Reboot your device! %s Continue working with the console", System.lineSeparator()),
+                    (isOk) -> {
+                        if (isOk) {
+                            activateConsole();
+                        } else {
+                            disconnectAction.run();
+                        }
+                    }
+            );
+            return;
+        }
+
+        activateConsole();
+    };
+
+    private void activateConsole() {
         setup_console_text_field.setDisable(false);
         backendCaller.activateConsole();
-    };
+    }
 
     private final Consumer<File> writeDataToDevice = (file) -> {
         CompletableFuture.supplyAsync(() -> writeDataToDeviceFunction.apply(file))
-                .thenAccept(checkDriverSuccessfullyInstalled);
+                .thenAccept(checkWriteToControllerOperations);
     };
 
     private void writePageMemory(int pageNum, int time, byte[] bytesToWrite) {
@@ -427,7 +486,7 @@ public class MainWindowController {
         if (!isAck(backendCaller.readDataFromDevice(1, deviceAnswerTimeout)[0]))
             throw new RuntimeException(format("Can't write data to page [%s]", pageNum));
 
-        sendBytesAction.accept(prepareWriteBiteArray(pageNum, time, bytesToWrite));
+        sendBytesAction.accept(prepareWriteByteArray(pageNum, time, bytesToWrite));
 
         if (!isAck(backendCaller.readDataFromDevice(1, deviceAnswerTimeout)[0]))
             throw new RuntimeException(format("Can't write data to page [%s]. Bad checksum.", pageNum));
@@ -435,9 +494,8 @@ public class MainWindowController {
 
     /**
      * Записываем все байты которые у нас есть, остальные просто заполняем 0xFF
-     * TODO потестить плотнее метод
      */
-    private byte[] prepareWriteBiteArray(int pageNum, int time, byte[] bytesToWrite) {
+    private byte[] prepareWriteByteArray(int pageNum, int time, byte[] bytesToWrite) {
         // +2 тк: 1 место под передаваемое кол-во бай, 2 место под чек-сумму
         byte[] resultByteArray = new byte[DEFAULT_BYTE_COUNT_TO_WRITE + 2];
         // Кол-во байтов для контроллера (макс 255)
@@ -495,11 +553,9 @@ public class MainWindowController {
                 .handle(prepareBiFunction(getDeviceVersionAction))
                 .handle(prepareBiFunction(readFlashMemory))
                 .handle(prepareBiFunction(eraseDeviceAction))
-                // TODO Исправить ошибку с многопоточкой, ошибки из процедуры обработки файла не влияют на checkDriver, тк запускается позже из основного потока (Platform.runLater())
+                // Продолжение цикла операций продолжается в действии загрузки драйвера на контроллер
                 .handle(prepareBiFunction(() -> bootDriverAction.accept(event)))
-//                .handle(prepareBiFunction(readFlashMemory))
-                // TODO исправить чекер, тк тут ещё установка драйвера не завершена
-                .thenAccept(checkDriverSuccessfullyInstalled);
+                .thenAccept(checkPrepareToWriteOperations);
     }
 
     /**
@@ -615,9 +671,12 @@ public class MainWindowController {
         try {
             SapogUtils.alert(mainElement.getScene().getWindow(), Alert.AlertType.WARNING,
                     "Connection lost...", null, "Do you want to reconnect?",
-                    () -> connect(null),
+                    (isOk) -> {
+                        if (isOk) connect(null);
+                    },
                     new ButtonType("Reconnect", ButtonType.OK.getButtonData()),
-                    ButtonType.CANCEL);
+                    ButtonType.CANCEL
+            );
         } catch (Exception ex) {
             ex.printStackTrace();
         }
@@ -632,8 +691,6 @@ public class MainWindowController {
             });
         }
     };
-
-    private final UpdateConnectionStatusScheduler updateConnectionStatusScheduler = new UpdateConnectionStatusScheduler();
 
     private final Timer dcValueReader = new Timer();
 
@@ -653,12 +710,6 @@ public class MainWindowController {
     };
 
     private final Supplier<ConnectionInfo> checkConnectionAction = backendCaller::checkConnection;
-
-    private final Consumer<ConnectionInfo> updateConnectionInfo = info -> {
-        updateStatusBar(info);
-        recalculateButtonsAvailability(info.isConnected());
-        if (!info.isConnected()) updateConnectionStatusScheduler.stop();
-    };
 
     private final Runnable updateConnectionStatusTask = () -> {
         ConnectionInfo info;
@@ -699,21 +750,14 @@ public class MainWindowController {
 
             port_button.setDisable(true);
             connect_button.setDisable(true);
+            save_config_to_file.setDisable(true);
+            load_config_from_file.setDisable(true);
+            load_default_config.setDisable(true);
 
         } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException(e);
         }
-    };
-
-    private final Runnable disconnectAction = () -> {
-        updateConnectionInfo.accept(NO_CONNECTION);
-        try {
-            backendCaller.disconnect();
-        } catch (IOException e) {
-            IOExceptionHandler.accept(e);
-        }
-        System.out.println(format("Controller manually disconnected from port '%s'", getPort()));
     };
 
     private final Consumer<String> sendCommandAction = text -> {
@@ -1073,6 +1117,11 @@ public class MainWindowController {
      * Метод блокирует элементы, которые не должны использоваться без активного соединения
      */
     private void recalculateButtonsAvailability(boolean hasConnection) {
+        buttons.forEach((name, buttonImpl) -> {
+            buttonImpl.getButton().setDisable(!hasConnection);
+            buttonImpl.getFieldImpl().setDisable(!hasConnection);
+        });
+
         port_button.setDisable(hasConnection);
 
         connect_button.setDisable(hasConnection);
@@ -1080,11 +1129,6 @@ public class MainWindowController {
         reboot_button.setDisable(!hasConnection);
         boot_button.setDisable(!hasConnection);
         beep_button.setDisable(!hasConnection);
-
-        buttons.forEach((name, buttonImpl) -> {
-            buttonImpl.getButton().setDisable(!hasConnection);
-            buttonImpl.getFieldImpl().setDisable(!hasConnection);
-        });
 
         sett_all_to_board.setDisable(!hasConnection);
         load_all_from_board.setDisable(!hasConnection);

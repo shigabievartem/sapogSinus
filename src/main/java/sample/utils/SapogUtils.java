@@ -123,7 +123,7 @@ public class SapogUtils {
      * Вывести информацию в диалоговом окне
      */
     public static void alert(@NotNull Window window, @NotNull Alert.AlertType type, @NotNull String title,
-                             String headerText, String contentText, Runnable action, ButtonType... buttons) {
+                             String headerText, String contentText, Consumer<Boolean> action, ButtonType... buttons) {
         runInMainThread(() -> {
             Alert alert = new Alert(type, contentText);
             alert.setTitle(title);
@@ -138,8 +138,8 @@ public class SapogUtils {
             }
 
             Optional<ButtonType> result = alert.showAndWait();
-            if (result.isPresent() && ButtonType.OK.getButtonData() == result.get().getButtonData() && action != null)
-                action.run();
+            if (action != null)
+                action.accept(result.isPresent() && ButtonType.OK.getButtonData() == result.get().getButtonData());
         });
     }
 
