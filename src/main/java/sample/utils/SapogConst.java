@@ -28,6 +28,25 @@ public interface SapogConst {
     /* Сколько раз неолбходимо произвести запись байтов, чтобы полностью заполнить страницу */
     int WRITE_FLASH_TIMES_TO_REPEAT = FLASH_PAGE_SIZE / DEFAULT_BYTE_COUNT_TO_WRITE;
 
+
+    /* Timeout на ответ контроллера */
+    int DEVICE_ANSWER_TIMEOUT = 30000;
+
+    /* Стандартное время на выполнение backEnd операции */
+    long DEFAULT_TIME_OUT = 15;
+
+    /* Частота считывания значения слайдера */
+    long SLIDER_FREQUENCY = 200;
+
+    /* Частота проверки соединения */
+    long CHECK_CONNECTION_FREQUENCY = 2 * 1000;
+
+    /**
+     * Время перед закрытием модального окна, после успешного выполнения таски
+     */
+    long WAIT_MODAL_WINDOW_BEFORE_CLOSE_TIME = 2 * 1000;
+
+
     class WindowConfigLocations {
         public static final URL mainWindowConfigLocation = ApplicationStarter.class.getResource("/fxml/mainWindow.fxml");
         public static final URL progressWindowConfigLocation = ApplicationStarter.class.getResource("/fxml/progressWindow.fxml");

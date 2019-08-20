@@ -10,10 +10,7 @@ import org.slf4j.LoggerFactory;
 import sample.objects.ConnectionInfo;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import static java.lang.String.format;
@@ -136,7 +133,7 @@ public class SerialDevice {
                 DC,
                 RPM,
                 //TODO добавить версию
-                "version"
+                "sapog-sinus-v1.02"
         );
     }
 
@@ -341,7 +338,7 @@ public class SerialDevice {
         reopenAt = 0;
     }
 
-    public void startReaderThread(){
+    public void startReaderThread() {
         readThreadShouldExit = false;
         if (readerThread == null || !readerThread.isAlive()) {
             readerThread = new Thread(serialReader);
@@ -424,7 +421,7 @@ public class SerialDevice {
         portState = SerialState.PARAM_SAVING;
         byte[] buffer;
         if (value instanceof Float) {
-            buffer = String.format("cfg set %s %.2f\r\n", fieldName, value).getBytes();
+            buffer = String.format(Locale.US, "cfg set %s %.2f\r\n", fieldName, value).getBytes();
         } else if (value instanceof Boolean) {
             buffer = String.format("cfg set %s %s\r\n", fieldName, (Boolean) value ? "true" : "false").getBytes();
         } else if (value instanceof Integer) {

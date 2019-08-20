@@ -16,6 +16,8 @@ public enum ByteCommands {
     GET(new byte[]{0x00, (byte) 0xFF}, 15),
     // Метод возвращает версию прошивки на плате
     GET_VERSION(new byte[]{0x01, (byte) 0xFE}, 5),
+    // Выполняет записаннный на контроллер код
+    GO(new byte[]{0x21, (byte) 0xDE}, 1),
     // Комманды для считывания данных с контроллера
     READ_MEMORY(new byte[]{0x11, (byte) 0xEE}, 1),
     // Комманды для очистки памяти

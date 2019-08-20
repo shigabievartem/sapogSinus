@@ -45,7 +45,7 @@ public class SapogUtils {
     }
 
     public static synchronized void showDriverFile(boolean isSaveAction, @NotNull Window window, Consumer<File> fileHandler) {
-        showFileDialog(isSaveAction, window, fileHandler, new FileChooser.ExtensionFilter("Driver file", "*.bin", "*.s19", "*.hex"));
+        showFileDialog(isSaveAction, window, fileHandler, new FileChooser.ExtensionFilter("Driver file", "*.bin"));
     }
 
 
@@ -298,6 +298,10 @@ public class SapogUtils {
         }
         resultByteArray[byteArray.length] = xorBytes(byteArray);
         return resultByteArray;
+    }
+
+    public static void handleException(Throwable throwable) {
+        throwable.printStackTrace();
     }
 
 }

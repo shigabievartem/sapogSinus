@@ -1,9 +1,7 @@
 package sample.utils;
 
 import javafx.scene.control.TextArea;
-import jssc.SerialPort;
-import jssc.SerialPortException;
-import jssc.SerialPortTimeoutException;
+import jssc.*;
 import org.jetbrains.annotations.NotNull;
 import sample.objects.ConnectionInfo;
 
@@ -12,6 +10,7 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
 
 import static jssc.SerialPort.BAUDRATE_115200;
 import static jssc.SerialPort.DATABITS_8;
@@ -139,9 +138,14 @@ public class BackendCaller {
     }
 
     public String[] getPortNames() {
-//        throw new RuntimeException("asdfdasf");
-        // TODO откатить изменения
-        return Arrays.asList("COM4", "port2", "port3").toArray(new String[0]);
+        String[] portNames;
+        if (SerialNativeInterface.getOsType() == SerialNativeInterface.OS_MAC_OS_X) {
+            // for MAC OS default pattern of jssc library is too restrictive
+            portNames = SerialPortList.getPortNames("/dev/", Pattern.compile("tty\\..*"));
+        } else {
+            portNames = SerialPortList.getPortNames();
+        }
+        return Arrays.asList(portNames).toArray(new String[0]);
     }
 
     /**

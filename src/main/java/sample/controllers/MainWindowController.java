@@ -21,6 +21,7 @@ import sample.objects.filters.IntegerFilter;
 import sample.objects.tasks.LoadAllFromBoardTask;
 import sample.objects.tasks.SetAllToBoardTask;
 import sample.objects.tasks.UpdateConnectionStatusScheduler;
+import sample.objects.tasks.WriteDataToDeviceTask;
 import sample.utils.BackendCaller;
 import sample.utils.SapogUtils;
 
@@ -39,9 +40,9 @@ import java.util.function.Supplier;
 
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static javafx.scene.control.Alert.AlertType.CONFIRMATION;
 import static javafx.scene.control.Alert.AlertType.ERROR;
-import static sample.objects.ByteCommands.*;
+import static sample.objects.ByteCommands.READ_MEMORY;
+import static sample.objects.ByteCommands.isAck;
 import static sample.utils.SapogConst.*;
 import static sample.utils.SapogConst.Events.connectionLost;
 import static sample.utils.SapogConst.WindowConfigLocations.defaultConfig;
@@ -202,26 +203,7 @@ public class MainWindowController {
      */
     private final BackendCaller backendCaller = BackendCaller.getInstance();
 
-    /**
-     * Стандартное время на выполнение backEnd операции
-     */
-    private final long defaultTimeOut = 15;
-
-    /**
-     * Частота считывания значения слайдера
-     */
-    private final long sliderFrequency = 200;
     private Double lastSliderValue = 0.0;
-
-    /**
-     * Частота проверки соединения
-     */
-    private final long checkConnectionFrequency = 2 * 1000;
-
-    /**
-     * Время ожидания, после завершения выполнения задания с установкой или загрузкой параметров, после которого окно закроется
-     */
-    private long waitModalWindowBeforeCloseTime = 2 * 1000;
 
     @FXML
     void initialize() {
@@ -276,8 +258,6 @@ public class MainWindowController {
         updateConnectionStatusAction.run();
     };
 
-    private final static int deviceAnswerTimeout = 30000;
-
     // TODO переделать с использованием спринга
     private final Consumer<byte[]> sendBytesAction = bytes -> {
         String serverAnswer;
@@ -293,31 +273,12 @@ public class MainWindowController {
             }).exceptionally((e) -> {
                 e.printStackTrace();
                 return null;
-            }).get(defaultTimeOut, SECONDS);
+            }).get(DEFAULT_TIME_OUT, SECONDS);
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
             e.printStackTrace();
             serverAnswer = null;
         }
         if (!isBlankOrNull(serverAnswer)) print(serverAnswer);
-    };
-
-    /* Комманда для начала взаимодействия с платой */
-    private final Supplier<Boolean> connectToDeviceCommand = () -> {
-        try {
-            Thread.sleep(2500);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        // Проверяем версию, установленную на устройстве
-        sendBytesAction.accept(START_BOOT_COMMAND.getBytes());
-        return isAck(backendCaller.readDataFromDevice(START_BOOT_COMMAND.getExpectedBytesCount(), deviceAnswerTimeout)[0]);
-    };
-
-    /* Считываем версию драйвера с платы */
-    private final Supplier<Boolean> getDeviceVersionAction = () -> {
-        // Проверяем версию, установленную на устройстве
-        sendBytesAction.accept(GET_VERSION.getBytes());
-        return checkBootloaderVersion(backendCaller.readDataFromDevice(GET_VERSION.getExpectedBytesCount(), deviceAnswerTimeout));
     };
 
     /* Считываем данные с flash памяти */
@@ -327,7 +288,7 @@ public class MainWindowController {
             System.out.println(format("read data from page [%s]", i));
             // Проверяем версию, установленную на устройстве
             sendBytesAction.accept(READ_MEMORY.getBytes());
-            if (!isAck(backendCaller.readDataFromDevice(READ_MEMORY.getExpectedBytesCount(), deviceAnswerTimeout)[0]))
+            if (!isAck(backendCaller.readDataFromDevice(READ_MEMORY.getExpectedBytesCount(), DEVICE_ANSWER_TIMEOUT)[0]))
                 return false;
 
             try {
@@ -355,7 +316,7 @@ public class MainWindowController {
         // Номер страницы рассчитывается из рассчета начальной страницы + шаг страницы * на номер текущей страницы
         sendBytesAction.accept(convertPageNumToBytesAndCheckSum(FLASH_MEMORY_START_PAGE_BYTE + pageNum * FLASH_MEMORY_PAGE_STEP));
 
-        if (!isAck(backendCaller.readDataFromDevice(1, deviceAnswerTimeout)[0]))
+        if (!isAck(backendCaller.readDataFromDevice(1, DEVICE_ANSWER_TIMEOUT)[0]))
             throw new RuntimeException(format("Can't read data from page [%s]", pageNum));
 
         sendBytesAction.accept(
@@ -364,67 +325,11 @@ public class MainWindowController {
                         xorBytes(new byte[]{(byte) DEFAULT_BYTE_COUNT_TO_READ, (byte) 0xFF})
                 }
         );
-        if (!isAck(backendCaller.readDataFromDevice(1, deviceAnswerTimeout)[0]))
+        if (!isAck(backendCaller.readDataFromDevice(1, DEVICE_ANSWER_TIMEOUT)[0]))
             throw new RuntimeException(format("Wrong bytes count [%s]", DEFAULT_BYTE_COUNT_TO_READ));
 
-        return backendCaller.readDataFromDevice(DEFAULT_BYTE_COUNT_TO_READ + 1, deviceAnswerTimeout);
+        return backendCaller.readDataFromDevice(DEFAULT_BYTE_COUNT_TO_READ + 1, DEVICE_ANSWER_TIMEOUT);
     }
-
-    /* Глобальная очистка памяти flash памяти(удаление драйвера) */
-    private final Supplier<Boolean> eraseDeviceAction = () -> {
-        sendBytesAction.accept(ERASE_MEMORY.getBytes());
-        if (!isAck(backendCaller.readDataFromDevice(ERASE_MEMORY.getExpectedBytesCount(), deviceAnswerTimeout)[0]))
-            return false;
-        // Удалим все области памяти, а не конкретные страницы
-        sendBytesAction.accept(ERASE_MEMORY_GLOBAL_ERASE.getBytes());
-        return isAck(backendCaller.readDataFromDevice(ERASE_MEMORY_GLOBAL_ERASE.getExpectedBytesCount(), deviceAnswerTimeout)[0]);
-    };
-
-    /**
-     * Запись драйвера на контроллер
-     */
-    private final Function<File, Boolean> writeDataToDeviceFunction = (file) -> {
-        try {
-            byte[] fileDataBytes = parseFileToBytesArray(file);
-            if (fileDataBytes.length > FLASH_SIZE)
-                throw new RuntimeException(format("File size [%s] > flash memory size [%s]", fileDataBytes.length, FLASH_SIZE));
-
-            // Дополним байты из файла пустыми значениями, чтобы дальше просто записать их в память
-            byte[] byteArrayToWriteInFlash = new byte[FLASH_SIZE];
-            System.arraycopy(fileDataBytes, 0, byteArrayToWriteInFlash, 0, fileDataBytes.length);
-
-            for (int pageNum = 0; pageNum < FLASH_MAX_PAGE_COUNT; pageNum++) {
-                System.out.println(format("Write data to page[%s]", pageNum));
-                for (int time = 0; time < WRITE_FLASH_TIMES_TO_REPEAT; time++) {
-
-                    // Проверим, а не закончили ли мы запись драйвера на контроллер
-                    if (fileDataBytes.length < calculateStartBytePosition(pageNum, time))
-                        return true;
-
-                    sendBytesAction.accept(WRITE_MEMORY.getBytes());
-                    if (!isAck(backendCaller.readDataFromDevice(WRITE_MEMORY.getExpectedBytesCount(), deviceAnswerTimeout)[0]))
-                        return false;
-
-                    writePageMemory(pageNum, time, byteArrayToWriteInFlash);
-                }
-            }
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            return false;
-        }
-        return true;
-    };
-
-    /**
-     * Проверяем корректность подготовительных к записи операций, если что-то пошло не так, то включаем консольный режим
-     */
-    private final Consumer<Boolean> checkPrepareToWriteOperations = (isSuccess) -> {
-        if (isSuccess) {
-            return;
-        }
-
-        activateConsole();
-    };
 
     private final UpdateConnectionStatusScheduler updateConnectionStatusScheduler = new UpdateConnectionStatusScheduler();
 
@@ -445,117 +350,12 @@ public class MainWindowController {
     };
 
     /**
-     * Проверяем корректность операции записи на устройство, если что-то пошло не так, то включаем консольный режим
-     */
-    private final Consumer<Boolean> checkWriteToControllerOperations = (isSuccess) -> {
-        if (isSuccess) {
-            SapogUtils.alert(
-                    mainElement.getScene().getWindow(),
-                    CONFIRMATION,
-                    "Installation driver status",
-                    null,
-                    format("Driver successfully installed. Reboot your device! %s Continue working with the console", System.lineSeparator()),
-                    (isOk) -> {
-                        if (isOk) {
-                            activateConsole();
-                        } else {
-                            disconnectAction.run();
-                        }
-                    }
-            );
-            return;
-        }
-
-        activateConsole();
-    };
-
-    private void activateConsole() {
-        setup_console_text_field.setDisable(false);
-        backendCaller.activateConsole();
-    }
-
-    private final Consumer<File> writeDataToDevice = (file) -> {
-        CompletableFuture.supplyAsync(() -> writeDataToDeviceFunction.apply(file))
-                .thenAccept(checkWriteToControllerOperations);
-    };
-
-    private void writePageMemory(int pageNum, int time, byte[] bytesToWrite) {
-        // TODO надо объединить методы записи и чтения, ибо они очень похожи
-        sendBytesAction.accept(convertPageNumToBytesAndCheckSum(FLASH_MEMORY_START_PAGE_BYTE + pageNum * FLASH_MEMORY_PAGE_STEP + time * DEFAULT_BYTE_COUNT_TO_WRITE));
-
-        if (!isAck(backendCaller.readDataFromDevice(1, deviceAnswerTimeout)[0]))
-            throw new RuntimeException(format("Can't write data to page [%s]", pageNum));
-
-        sendBytesAction.accept(prepareWriteByteArray(pageNum, time, bytesToWrite));
-
-        if (!isAck(backendCaller.readDataFromDevice(1, deviceAnswerTimeout)[0]))
-            throw new RuntimeException(format("Can't write data to page [%s]. Bad checksum.", pageNum));
-    }
-
-    /**
-     * Записываем все байты которые у нас есть, остальные просто заполняем 0xFF
-     */
-    private byte[] prepareWriteByteArray(int pageNum, int time, byte[] bytesToWrite) {
-        // +2 тк: 1 место под передаваемое кол-во бай, 2 место под чек-сумму
-        byte[] resultByteArray = new byte[DEFAULT_BYTE_COUNT_TO_WRITE + 2];
-        // Кол-во байтов для контроллера (макс 255)
-        resultByteArray[0] = (byte) DEFAULT_BYTE_COUNT_TO_WRITE - 1;
-        //
-        // ТК мы ранее дозаполнили массив пустыми байтами, то у байт в массиве хватит, чтобы заполнить всю flash память
-        System.arraycopy(bytesToWrite, calculateStartBytePosition(pageNum, time), resultByteArray, 1, DEFAULT_BYTE_COUNT_TO_WRITE);
-
-        byte checkSum = xorBytes(resultByteArray);
-        resultByteArray[resultByteArray.length - 1] = checkSum;
-        return resultByteArray;
-    }
-
-    /**
-     * Рассчёт стартовой позиции байта в массиве с которой необходимо продолжить запись
-     */
-    private int calculateStartBytePosition(int pageNum, int time) {
-        return pageNum * WRITE_FLASH_TIMES_TO_REPEAT * DEFAULT_BYTE_COUNT_TO_WRITE + time * DEFAULT_BYTE_COUNT_TO_WRITE;
-    }
-
-    private <T> BiFunction<? super T, Throwable, Boolean> prepareBiFunction(Supplier<Boolean> command) {
-        return (value, exc) -> {
-            // Если предыдущая операция прошла не успешно, последующие операции делать не надо
-            if (exc != null) {
-                exc.printStackTrace();
-                return false;
-            }
-            if (value instanceof Boolean && !(Boolean) value) return false;
-            try {
-                return CompletableFuture.supplyAsync(command).get(100, SECONDS);
-            } catch (Exception e) {
-                e.printStackTrace();
-                return false;
-            }
-        };
-    }
-
-    private <T> BiFunction<? super T, Throwable, Boolean> prepareBiFunction(Runnable command) {
-        return prepareBiFunction(() -> {
-            command.run();
-            return true;
-        });
-    }
-
-    /**
      * Вводит в режим boot loader'a
      */
     @FXML
     public void boot(ActionEvent event) {
-        CompletableFuture.runAsync(bootAction)
-                .exceptionally(defaultExceptionHandler)
-                .thenRun(disconnectAction)
-                .thenRun(connectInBootloaderMode)
-                .handle(prepareBiFunction(connectToDeviceCommand))
-                .handle(prepareBiFunction(getDeviceVersionAction))
-                .handle(prepareBiFunction(readFlashMemory))
-                .handle(prepareBiFunction(eraseDeviceAction))
-                // Продолжение цикла операций продолжается в действии загрузки драйвера на контроллер
-                .handle(prepareBiFunction(() -> bootDriverAction.accept(event)))
-                .thenAccept(checkPrepareToWriteOperations);
+        CompletableFuture.runAsync(() -> bootDriverAction.accept(event))
+                .exceptionally(defaultExceptionHandler).thenRun(disconnectAction);
     }
 
     /**
@@ -714,7 +514,7 @@ public class MainWindowController {
     private final Runnable updateConnectionStatusTask = () -> {
         ConnectionInfo info;
         try {
-            info = CompletableFuture.supplyAsync(checkConnectionAction).get(defaultTimeOut, SECONDS);
+            info = CompletableFuture.supplyAsync(checkConnectionAction).get(DEFAULT_TIME_OUT, SECONDS);
         } catch (Exception e) {
             e.printStackTrace();
             info = NO_CONNECTION;
@@ -740,10 +540,8 @@ public class MainWindowController {
         }
     };
 
-    private final Runnable connectInBootloaderMode = () -> {
+    public void connectInBootloaderMode() {
         String currentPort = getPort();
-//         При необходимости можно добавить введёный порт при успешном коннекте
-//        if (!port_button.getItems().contains(currentPort)) port_button.getItems().add(currentPort);
         try {
             backendCaller.connectInBootloaderMode(currentPort);
             System.out.println(format("Successfully connected to port: '%s' in bootloader mode", getPort()));
@@ -758,7 +556,7 @@ public class MainWindowController {
             e.printStackTrace();
             throw new RuntimeException(e);
         }
-    };
+    }
 
     private final Consumer<String> sendCommandAction = text -> {
         String serverAnswer;
@@ -774,7 +572,7 @@ public class MainWindowController {
             }).exceptionally((e) -> {
                 e.printStackTrace();
                 return null;
-            }).get(defaultTimeOut, SECONDS);
+            }).get(DEFAULT_TIME_OUT, SECONDS);
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
             e.printStackTrace();
             serverAnswer = null;
@@ -802,39 +600,12 @@ public class MainWindowController {
 
     private final Runnable rebootAction = () -> sendCommandAction.accept("reboot");
     private final Runnable beepAction = () -> sendCommandAction.accept("beep");
-    private final Runnable bootAction = () -> sendCommandAction.accept("boot");
     private final Runnable dcArmAction = () -> sendCommandAction.accept("dc arm");
     private final Runnable rpmArmAction = () -> sendCommandAction.accept("rpm arm");
     private final Function<Throwable, ? extends Void> defaultExceptionHandler = ex -> {
         ex.printStackTrace();
         return null;
     };
-
-    /**
-     * Метод проверяет версию bootloader'a, а заодно и позволяет убедиться, что мы находимся в нужном режиме
-     *
-     * @param dataFromDevice - ответ с контроллера
-     * @return - true, если версия bootloader'a определенна, в противном случае - false
-     */
-    private boolean checkBootloaderVersion(byte[] dataFromDevice) {
-        try {
-            return CompletableFuture.supplyAsync(
-                    () -> {
-                        if (dataFromDevice == null) return false;
-                        System.out.println("Check received data:");
-                        printBytes(dataFromDevice);
-                        if (dataFromDevice.length != 5) return false;
-                        if (!isAck(dataFromDevice[0])) return false;
-                        String message = String.format("Bootloader version: %02X", dataFromDevice[1]);
-                        System.out.println(new StringBuilder(message).insert(message.length() - 1, "."));
-                        return true;
-                    }
-            ).get(defaultTimeOut, SECONDS);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return false;
-        }
-    }
 
     private final Consumer<ProgressWindowController> progressBarLoadAction = (c) -> {
         try {
@@ -843,7 +614,7 @@ public class MainWindowController {
             CompletableFuture.runAsync(task).thenRun(() -> {
                 setLabel(c.getLabel(), "All parameters loaded from board.");
                 try {
-                    Thread.sleep(waitModalWindowBeforeCloseTime);
+                    Thread.sleep(WAIT_MODAL_WINDOW_BEFORE_CLOSE_TIME);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -856,6 +627,26 @@ public class MainWindowController {
         }
     };
 
+    private Function<Throwable, ? extends Void> handleWriteDataException(ProgressWindowController controller) {
+        return (ex) -> {
+            if (ex != null) {
+                ex.printStackTrace();
+                setLabel(controller.getLabel(), "Error installing driver.");
+                SapogUtils.print(controller.getConsole(), "'%s': %s", getSimpleErrorMessage(ex));
+                return null;
+            }
+
+            setLabel(controller.getLabel(), "Driver successfully installed to Device.");
+            try {
+                Thread.sleep(WAIT_MODAL_WINDOW_BEFORE_CLOSE_TIME);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            controller.closeWindow();
+            return null;
+        };
+    }
+
     private final Consumer<ProgressWindowController> progressBarSaveAction = (c) -> {
         try {
             SetAllToBoardTask task = new SetAllToBoardTask(c, buttons);
@@ -863,7 +654,7 @@ public class MainWindowController {
             CompletableFuture.runAsync(task).thenRun(() -> {
                 setLabel(c.getLabel(), "All parameters set to board.");
                 try {
-                    Thread.sleep(waitModalWindowBeforeCloseTime);
+                    Thread.sleep(WAIT_MODAL_WINDOW_BEFORE_CLOSE_TIME);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -901,9 +692,6 @@ public class MainWindowController {
     private final Consumer<ActionEvent> loadConfigFromFileAction = event -> showPropertiesFile(false,
             ((Button) event.getTarget()).getScene().getWindow(), parsePropertiesFromFile);
 
-    private final Consumer<ActionEvent> bootDriverAction = event -> showDriverFile(false,
-            ((Button) event.getTarget()).getScene().getWindow(), writeDataToDevice);
-
     private final BiFunction<Void, Throwable, Void> connectionHandler = (voidValue, exception) -> {
         if (exception != null) {
             SapogUtils.alert(
@@ -922,6 +710,60 @@ public class MainWindowController {
         }
         return null;
     };
+
+    /**
+     * Действия, необходимые для записи драйвера на контроллер
+     */
+    private final Consumer<File> writeDataToDevice = (file) -> {
+
+        byte[] fileDataBytes = parseFileToBytesArray(file);
+        if (fileDataBytes.length > FLASH_SIZE) {
+            SapogUtils.alert(
+                    mainElement.getScene().getWindow(),
+                    ERROR,
+                    "Error",
+                    null,
+                    format("File size [%s] > flash memory size [%s]", fileDataBytes.length, FLASH_SIZE),
+                    null
+            );
+            return;
+        }
+
+        Consumer<ProgressWindowController> writingDataToDeviceAction = (controller) -> {
+            try {
+                WriteDataToDeviceTask task = new WriteDataToDeviceTask(controller, this, fileDataBytes);
+                controller.getProgress_bar().progressProperty().bind(task.progressProperty());
+                CompletableFuture.runAsync(task)
+                        .exceptionally(handleWriteDataException(controller));
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        };
+
+        showModalWindow("Writing data to device...", progressWindowConfigLocation,
+                mainElement.getScene().getWindow(), writingDataToDeviceAction);
+
+//        CompletableFuture.runAsync(bootAction)
+//                .exceptionally(defaultExceptionHandler)
+//                .thenRun(disconnectAction)
+//                .thenRun(connectInBootloaderMode)
+//                .handle(prepareBiFunction(connectToDeviceCommand))
+//                .handle(prepareBiFunction(getDeviceVersionAction))
+//                .handle(prepareBiFunction(eraseDeviceAction))
+//                .handle(prepareBiFunction(() -> writeDataToDeviceFunction.apply(fileDataBytes)))
+//                .handle(prepareBiFunction(rebootDeviceAction))
+//                .handle(prepareBiFunction(disconnectAction))
+//                .exceptionally(ex -> {
+//                    //TODO допилить
+//                    ex.printStackTrace();
+//                    return null;
+//                })
+//                .thenRun(connectAction)
+//                .handle(connectionHandler);
+    };
+
+    private final Consumer<ActionEvent> bootDriverAction = event -> showDriverFile(false,
+            ((Button) event.getTarget()).getScene().getWindow(), writeDataToDevice);
 
     private final Runnable loadDefaultConfigAction = () -> {
         try {
@@ -976,11 +818,11 @@ public class MainWindowController {
         mot_num_poles_value.setTextFormatter(new TextFormatter(new IntegerFilter(true, 2, 100)));
         mot_dc_slope_value.setTextFormatter(new TextFormatter(new DecimalFilter(true, 0.1f, 20f)));
         mot_dc_accel_value.setTextFormatter(new TextFormatter(new DecimalFilter(true, 0.001f, 0.5f)));
-        mot_pwm_hz_value.setTextFormatter(new TextFormatter(new IntegerFilter(true, 2000, 75000)));
+        mot_pwm_hz_value.setTextFormatter(new TextFormatter(new IntegerFilter(true, 6000, 30000)));
         temp_lim_value.setTextFormatter(new TextFormatter(new IntegerFilter(true, 90, 150)));
-        mot_i_max_value.setTextFormatter(new TextFormatter(new DecimalFilter(true, 1f, 60f)));
-        sens_i_scale_value.setTextFormatter(new TextFormatter(new DecimalFilter(true, 0f, 1000000f)));
-        set_rpm_value.setTextFormatter(new TextFormatter(new IntegerFilter(true, 900, 5000)));
+        mot_i_max_value.setTextFormatter(new TextFormatter(new DecimalFilter(true, 1f, 100f)));
+        sens_i_scale_value.setTextFormatter(new TextFormatter(new DecimalFilter(true, 0f, 10f)));
+        set_rpm_value.setTextFormatter(new TextFormatter(new IntegerFilter(true, 000, 5000)));
     }
 
     /**
@@ -989,7 +831,7 @@ public class MainWindowController {
     private void initializeButtons() {
         String[] portNames = new String[0];
         try {
-            portNames = CompletableFuture.supplyAsync(backendCaller::getPortNames).get(defaultTimeOut, SECONDS);
+            portNames = CompletableFuture.supplyAsync(backendCaller::getPortNames).get(DEFAULT_TIME_OUT, SECONDS);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -1027,7 +869,7 @@ public class MainWindowController {
                 System.out.println(format("%s changing value: '%s' -> '%s'", variableName, lastSliderValue, currentValue));
 
                 slider.setDisable(true);
-                backendCaller.sendCommand(format("dc %s", formatDecimalValue(currentValue)));
+                backendCaller.sendCommand(format(Locale.US, "dc %s", formatDecimalValue(currentValue)));
                 lastSliderValue = currentValue;
                 System.out.println("successfully set value");
             } catch (IOException e) {
@@ -1085,7 +927,7 @@ public class MainWindowController {
      * Метод проверяет коннект, в случае разрыва коннекта открывается модальное окно с оповещением
      */
     private void updateConnectionStatus() {
-        CompletableFuture.runAsync(() -> updateConnectionStatusScheduler.start(updateConnectionStatusTask, 0, checkConnectionFrequency));
+        CompletableFuture.runAsync(() -> updateConnectionStatusScheduler.start(updateConnectionStatusTask, 0, CHECK_CONNECTION_FREQUENCY));
     }
 
     /**
@@ -1155,10 +997,18 @@ public class MainWindowController {
             public void run() {
                 setSliderValueImpl(dc_slider, false);
             }
-        }, 0, sliderFrequency);
+        }, 0, SLIDER_FREQUENCY);
     }
 
     private void loadAllFromBoardImpl(Window window) {
         CompletableFuture.runAsync(() -> loadAllFromBoardAction.accept(window)).exceptionally(defaultExceptionHandler);
+    }
+
+    public void sendCommand(String command) {
+        sendCommandAction.accept(command);
+    }
+
+    public void sendBytes(byte[] bytes) {
+        sendBytesAction.accept(bytes);
     }
 }
