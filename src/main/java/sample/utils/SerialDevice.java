@@ -139,7 +139,7 @@ public class SerialDevice {
 
     Runnable serialReader = new Runnable() {
         public void run() {
-//            StringBuilder message = new StringBuilder();
+            StringBuilder message = new StringBuilder();
             System.out.println("Starting serialReader thread");
             StringBuilder lastLine = new StringBuilder();
             while (!readThreadShouldExit && (portState != SerialState.NOT_OPEN)) {
@@ -203,10 +203,10 @@ public class SerialDevice {
 
     private boolean tryExtractCommand(String s) {
         if (
-                (s.indexOf("ch> stat2\r\n") == 0) ||
-                        (s.indexOf("ch> cfg list\r\n") == 0) ||
-                        (s.indexOf("ch> cfg set ") == 0) ||
-                        (s.indexOf("ch> beep\r\n") == 0)
+                    (s.indexOf("ch> stat2\r\n") == 0) ||
+                    (s.indexOf("ch> cfg list\r\n") == 0) ||
+                    (s.indexOf("ch> cfg set ") == 0) ||
+                    (s.indexOf("ch> beep\r\n") == 0)
         ) {
             return true;
         }
@@ -265,8 +265,8 @@ public class SerialDevice {
             int idxEq = s.indexOf("=");
             if (
                     (idxKey == 0) &&
-                            (idxEq > param.length()) &&
-                            (idxBracket > idxEq + 1)
+                    (idxEq > param.length()) &&
+                    (idxBracket > idxEq + 1)
             ) {
                 String valStr = s.substring(idxEq + 1, idxBracket);
                 valStr = valStr.replaceAll("\\s", "");
@@ -300,21 +300,11 @@ public class SerialDevice {
         port = new SerialPort(device);
         int jsscParity = 0;
         switch (parity) {
-            case NONE:
-                jsscParity = SerialPort.PARITY_NONE;
-                break;
-            case ODD:
-                jsscParity = SerialPort.PARITY_ODD;
-                break;
-            case EVEN:
-                jsscParity = SerialPort.PARITY_EVEN;
-                break;
-            case MARK:
-                jsscParity = SerialPort.PARITY_MARK;
-                break;
-            case SPACE:
-                jsscParity = SerialPort.PARITY_SPACE;
-                break;
+            case NONE: jsscParity = SerialPort.PARITY_NONE; break;
+            case ODD: jsscParity = SerialPort.PARITY_ODD; break;
+            case EVEN: jsscParity = SerialPort.PARITY_EVEN; break;
+            case MARK: jsscParity = SerialPort.PARITY_MARK; break;
+            case SPACE: jsscParity = SerialPort.PARITY_SPACE; break;
         }
 
         try {
