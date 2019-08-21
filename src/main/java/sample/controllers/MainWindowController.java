@@ -41,8 +41,6 @@ import java.util.function.Supplier;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static javafx.scene.control.Alert.AlertType.ERROR;
-import static sample.objects.ByteCommands.READ_MEMORY;
-import static sample.objects.ByteCommands.isAck;
 import static sample.utils.SapogConst.*;
 import static sample.utils.SapogConst.Events.connectionLost;
 import static sample.utils.SapogConst.WindowConfigLocations.defaultConfig;
@@ -280,56 +278,6 @@ public class MainWindowController {
         }
         if (!isBlankOrNull(serverAnswer)) print(serverAnswer);
     };
-
-    /* Считываем данные с flash памяти */
-    private final Supplier<Boolean> readFlashMemory = () -> {
-        Map<Integer, byte[]> flashMemoryData = new HashMap<>();
-        for (int i = 0; i < FLASH_MAX_PAGE_COUNT; i++) {
-            System.out.println(format("read data from page [%s]", i));
-            // Проверяем версию, установленную на устройстве
-            sendBytesAction.accept(READ_MEMORY.getBytes());
-            if (!isAck(backendCaller.readDataFromDevice(READ_MEMORY.getExpectedBytesCount(), DEVICE_ANSWER_TIMEOUT)[0]))
-                return false;
-
-            try {
-                flashMemoryData.put(i, readPageMemory(i));
-            } catch (Exception ex) {
-                ex.printStackTrace();
-                return false;
-            }
-        }
-
-        System.out.println("Data successfully read from flash memory!");
-
-        flashMemoryData.forEach((pageNum, bytesArray) -> {
-            StringBuilder dataFromPage = new StringBuilder(format("page %s", pageNum));
-            for (byte b : bytesArray) {
-                dataFromPage.append(format(" 0x%02X", b));
-            }
-            System.out.println(dataFromPage);
-        });
-
-        return true;
-    };
-
-    private byte[] readPageMemory(int pageNum) {
-        // Номер страницы рассчитывается из рассчета начальной страницы + шаг страницы * на номер текущей страницы
-        sendBytesAction.accept(convertPageNumToBytesAndCheckSum(FLASH_MEMORY_START_PAGE_BYTE + pageNum * FLASH_MEMORY_PAGE_STEP));
-
-        if (!isAck(backendCaller.readDataFromDevice(1, DEVICE_ANSWER_TIMEOUT)[0]))
-            throw new RuntimeException(format("Can't read data from page [%s]", pageNum));
-
-        sendBytesAction.accept(
-                new byte[]{
-                        (byte) DEFAULT_BYTE_COUNT_TO_READ,
-                        xorBytes(new byte[]{(byte) DEFAULT_BYTE_COUNT_TO_READ, (byte) 0xFF})
-                }
-        );
-        if (!isAck(backendCaller.readDataFromDevice(1, DEVICE_ANSWER_TIMEOUT)[0]))
-            throw new RuntimeException(format("Wrong bytes count [%s]", DEFAULT_BYTE_COUNT_TO_READ));
-
-        return backendCaller.readDataFromDevice(DEFAULT_BYTE_COUNT_TO_READ + 1, DEVICE_ANSWER_TIMEOUT);
-    }
 
     private final UpdateConnectionStatusScheduler updateConnectionStatusScheduler = new UpdateConnectionStatusScheduler();
 

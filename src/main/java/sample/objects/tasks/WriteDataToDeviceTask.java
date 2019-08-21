@@ -46,11 +46,11 @@ public class WriteDataToDeviceTask extends Task<Void> {
                 .handle(prepareBiFunction(this::connectToDevice, "send to initial byte to device"))
                 .handle(prepareBiFunction(this::getDeviceVersionAction, "check bootloader version"))
                 .handle(prepareBiFunction(this::eraseDeviceAction, "erase data from device"))
-                .handle(prepareBiFunction(() -> writeDataToDeviceFunction(fileDataBytes), "write data to device action"))
+                .handle(prepareBiFunction(this::writeDataToDeviceFunction, "write data to device action"))
+                .handle(prepareBiFunction(this::checkFlashMemory, "validation installed data"))
                 .handle(prepareBiFunction(this::rebootDeviceAction, "execute data from device"))
-                .handle(prepareBiFunction(() -> mainController.disconnect(null), "disconnect from device"))
-                .handle(prepareBiFunction(() -> mainController.connect(null), "connect to device"))
-                .handle(prepareBiFunction(() -> print("Driver successfully installed!"), null));
+                .handle(prepareBiFunction(() -> mainController.disconnect(null), null))
+                .handle(prepareBiFunction(() -> mainController.connect(null), null));
 
         return null;
     }
@@ -143,7 +143,7 @@ public class WriteDataToDeviceTask extends Task<Void> {
     /**
      * Запись драйвера на контроллер
      */
-    private Boolean writeDataToDeviceFunction(byte[] fileDataBytes) {
+    private Boolean writeDataToDeviceFunction() {
         try {
 
             // Дополним байты из файла пустыми значениями, чтобы дальше просто записать их в память
@@ -179,9 +179,16 @@ public class WriteDataToDeviceTask extends Task<Void> {
         return pageNum * WRITE_FLASH_TIMES_TO_REPEAT * DEFAULT_BYTE_COUNT_TO_WRITE + time * DEFAULT_BYTE_COUNT_TO_WRITE;
     }
 
+    /**
+     * Рассчёт стартовой позиции байта в массиве с которой необходимо продолжить запись
+     */
+    private int calculateCurrentFlashMemoryPosition(int pageNum, int time) {
+        return FLASH_MEMORY_START_PAGE_BYTE + pageNum * FLASH_MEMORY_PAGE_STEP + time * DEFAULT_BYTE_COUNT_TO_WRITE;
+    }
+
     private void writePageMemory(int pageNum, int time, byte[] bytesToWrite) {
         // TODO надо объединить методы записи и чтения, ибо они очень похожи
-        mainController.sendBytes(convertPageNumToBytesAndCheckSum(FLASH_MEMORY_START_PAGE_BYTE + pageNum * FLASH_MEMORY_PAGE_STEP + time * DEFAULT_BYTE_COUNT_TO_WRITE));
+        mainController.sendBytes(convertPageNumToBytesAndCheckSum(calculateCurrentFlashMemoryPosition(pageNum, time)));
 
         if (!isAck(backendCaller.readDataFromDevice(1, DEVICE_ANSWER_TIMEOUT)[0]))
             throw new RuntimeException(format("Can't write data to page [%s]", pageNum));
@@ -228,5 +235,58 @@ public class WriteDataToDeviceTask extends Task<Void> {
         return true;
     }
 
-    ;
+    /* Считываем данные с flash памяти */
+    private boolean checkFlashMemory() {
+        byte[] readResultArray = new byte[FLASH_SIZE];
+        for (int i = 0; i < FLASH_MAX_PAGE_COUNT; i++) {
+            System.out.println(format("read data from page [%s]", i));
+            for (int time = 0; time < WRITE_FLASH_TIMES_TO_REPEAT; time++) {
+
+                // Проверяем версию, установленную на устройстве
+                mainController.sendBytes(READ_MEMORY.getBytes());
+                if (!isAck(backendCaller.readDataFromDevice(READ_MEMORY.getExpectedBytesCount(), DEVICE_ANSWER_TIMEOUT)[0]))
+                    return false;
+
+                try {
+                    byte[] dataFromFlash = readPageMemory(i, time);
+                    System.out.println(format("read data size: %s", dataFromFlash.length));
+                    System.arraycopy(dataFromFlash, 0, readResultArray, calculateStartBytePosition(i, time), dataFromFlash.length);
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                    return false;
+                }
+            }
+        }
+        System.out.println("Data successfully read from flash memory!");
+
+        for (int i = 0; i < fileDataBytes.length; i++) {
+            if (readResultArray[i] != fileDataBytes[i]) {
+                print(format("[%s] bytes not equals! Actual = '0x%02X'; Expected = '0x%02X'",
+                        i, readResultArray[i], fileDataBytes[i]));
+                return false;
+            }
+        }
+
+        print("Driver successfully installed!");
+        return true;
+    }
+
+    private byte[] readPageMemory(int pageNum, int time) {
+        // Номер страницы рассчитывается из рассчета начальной страницы + шаг страницы * на номер текущей страницы
+        mainController.sendBytes(convertPageNumToBytesAndCheckSum(calculateCurrentFlashMemoryPosition(pageNum, time)));
+
+        if (!isAck(backendCaller.readDataFromDevice(1, DEVICE_ANSWER_TIMEOUT)[0]))
+            throw new RuntimeException(format("Can't read data from page [%s]", pageNum));
+
+        mainController.sendBytes(
+                new byte[]{
+                        (byte) DEFAULT_BYTE_COUNT_TO_READ,
+                        xorBytes(new byte[]{(byte) DEFAULT_BYTE_COUNT_TO_READ, (byte) 0xFF})
+                }
+        );
+        if (!isAck(backendCaller.readDataFromDevice(1, DEVICE_ANSWER_TIMEOUT)[0]))
+            throw new RuntimeException(format("Wrong bytes count [%s]", DEFAULT_BYTE_COUNT_TO_READ));
+
+        return backendCaller.readDataFromDevice(DEFAULT_BYTE_COUNT_TO_READ + 1, DEVICE_ANSWER_TIMEOUT);
+    }
 }
