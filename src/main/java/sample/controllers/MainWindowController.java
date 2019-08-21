@@ -665,8 +665,20 @@ public class MainWindowController {
      * Действия, необходимые для записи драйвера на контроллер
      */
     private final Consumer<File> writeDataToDevice = (file) -> {
-
-        byte[] fileDataBytes = parseFileToBytesArray(file);
+        byte[] fileDataBytes;
+        try {
+            fileDataBytes = parseFileToBytesArray(file);
+        } catch (OutOfMemoryError ex) {
+            SapogUtils.alert(
+                    mainElement.getScene().getWindow(),
+                    ERROR,
+                    "Parse file error",
+                    null,
+                    ex.getMessage(),
+                    null
+            );
+            return;
+        }
         if (fileDataBytes.length > FLASH_SIZE) {
             SapogUtils.alert(
                     mainElement.getScene().getWindow(),
