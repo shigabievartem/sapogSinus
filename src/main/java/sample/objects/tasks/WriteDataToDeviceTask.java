@@ -23,7 +23,7 @@ public class WriteDataToDeviceTask extends Task<Void> {
     private final MainWindowController mainController;
     private final byte[] fileDataBytes;
     private final AtomicInteger i = new AtomicInteger(1);
-    private final int operationCount = 10;
+    private final int operationCount = 11;
 
 
     /**
@@ -49,7 +49,8 @@ public class WriteDataToDeviceTask extends Task<Void> {
                 .handle(prepareBiFunction(() -> writeDataToDeviceFunction(fileDataBytes), "write data to device action"))
                 .handle(prepareBiFunction(this::rebootDeviceAction, "execute data from device"))
                 .handle(prepareBiFunction(() -> mainController.disconnect(null), "disconnect from device"))
-                .handle(prepareBiFunction(() -> mainController.connect(null), "connect to device"));
+                .handle(prepareBiFunction(() -> mainController.connect(null), "connect to device"))
+                .handle(prepareBiFunction(() -> print("Driver successfully installed!"), null));
 
         return null;
     }
@@ -63,6 +64,7 @@ public class WriteDataToDeviceTask extends Task<Void> {
                     return false;
                 }
                 if (value instanceof Boolean && !(Boolean) value) return false;
+                if (operationTitle != null) print("Executing operation: '%s'", operationTitle);
                 return CompletableFuture.supplyAsync(command).get(100, SECONDS);
             } catch (Exception e) {
                 printError(progressWindowController.getConsole(), e);
@@ -75,18 +77,17 @@ public class WriteDataToDeviceTask extends Task<Void> {
 
     private <T> BiFunction<? super T, Throwable, Boolean> prepareBiFunction(Runnable command, String operationTitle) {
         return prepareBiFunction(() -> {
-            command.run();
+            try {
+                CompletableFuture.runAsync(command).get(100, SECONDS);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
             return true;
         }, operationTitle);
     }
 
     /* Комманда для начала взаимодействия с платой */
     private Boolean connectToDevice() {
-        try {
-            Thread.sleep(2500);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
         // Проверяем версию, установленную на устройстве
         mainController.sendBytes(START_BOOT_COMMAND.getBytes());
         return isAck(backendCaller.readDataFromDevice(START_BOOT_COMMAND.getExpectedBytesCount(), DEVICE_ANSWER_TIMEOUT)[0]);

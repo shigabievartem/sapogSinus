@@ -355,7 +355,7 @@ public class MainWindowController {
     @FXML
     public void boot(ActionEvent event) {
         CompletableFuture.runAsync(() -> bootDriverAction.accept(event))
-                .exceptionally(defaultExceptionHandler).thenRun(disconnectAction);
+                .exceptionally(defaultExceptionHandler);
     }
 
     /**
@@ -552,6 +552,8 @@ public class MainWindowController {
             load_config_from_file.setDisable(true);
             load_default_config.setDisable(true);
 
+            Thread.sleep(2500);
+
         } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException(e);
@@ -742,24 +744,6 @@ public class MainWindowController {
 
         showModalWindow("Writing data to device...", progressWindowConfigLocation,
                 mainElement.getScene().getWindow(), writingDataToDeviceAction);
-
-//        CompletableFuture.runAsync(bootAction)
-//                .exceptionally(defaultExceptionHandler)
-//                .thenRun(disconnectAction)
-//                .thenRun(connectInBootloaderMode)
-//                .handle(prepareBiFunction(connectToDeviceCommand))
-//                .handle(prepareBiFunction(getDeviceVersionAction))
-//                .handle(prepareBiFunction(eraseDeviceAction))
-//                .handle(prepareBiFunction(() -> writeDataToDeviceFunction.apply(fileDataBytes)))
-//                .handle(prepareBiFunction(rebootDeviceAction))
-//                .handle(prepareBiFunction(disconnectAction))
-//                .exceptionally(ex -> {
-//                    //TODO допилить
-//                    ex.printStackTrace();
-//                    return null;
-//                })
-//                .thenRun(connectAction)
-//                .handle(connectionHandler);
     };
 
     private final Consumer<ActionEvent> bootDriverAction = event -> showDriverFile(false,
