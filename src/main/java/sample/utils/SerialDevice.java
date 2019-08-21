@@ -11,6 +11,7 @@ import sample.objects.ConnectionInfo;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -124,7 +125,7 @@ public class SerialDevice {
                 DC,
                 RPM,
                 //TODO добавить версию
-                "version"
+                "sapog-sinus-v1.02"
                 );
     }
 
@@ -384,7 +385,7 @@ public class SerialDevice {
         portState = SerialState.PARAM_SAVING;
         byte[] buffer;
         if (value instanceof Float) {
-            buffer = String.format("cfg set %s %.2f\r\n", fieldName, value).getBytes();
+            buffer = String.format(Locale.US, "cfg set %s %.2f\r\n", fieldName, value).getBytes();
         } else if (value instanceof Boolean) {
             buffer = String.format("cfg set %s %s\r\n", fieldName, (Boolean)value?"true":"false").getBytes();
         } else if (value instanceof Integer) {
