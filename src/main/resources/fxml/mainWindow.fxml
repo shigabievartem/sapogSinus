@@ -1,10 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import java.lang.*?>
+<?import javafx.scene.shape.*?>
 <?import javafx.geometry.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.shape.Circle?>
 <?import javafx.scene.text.*?>
+
 <VBox fx:id="mainElement" prefHeight="600.0" prefWidth="800.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="sample.controllers.MainWindowController">
    <children>
       <HBox maxHeight="80.0" maxWidth="800.0" minHeight="80.0" minWidth="800.0" prefHeight="80.0" prefWidth="800.0" spacing="15.0">
@@ -27,7 +30,7 @@
                      <children>
                         <HBox maxWidth="800.0" minWidth="800.0" prefWidth="800.0" spacing="15.0">
                            <children>
-                              <ComboBox id="port_button" fx:id="port_button" editable="true" prefHeight="35.0" prefWidth="350.0">
+                              <ComboBox id="port_button" fx:id="port_button" editable="true" prefHeight="35.0" prefWidth="320.0">
                                  <HBox.margin>
                                     <Insets left="10.0" top="5.0" />
                                  </HBox.margin>
@@ -53,7 +56,7 @@
                                     <Font size="11.0" />
                                  </font>
                                  <HBox.margin>
-                                    <Insets left="10.0" right="5.0" top="5.0" />
+                                    <Insets top="5.0" />
                                  </HBox.margin>
                               </Button>
                               <Button id="reboot_button" fx:id="reboot_button" mnemonicParsing="false" onAction="#reboot" prefHeight="35.0" prefWidth="55.0" text="Reboot">
@@ -61,15 +64,23 @@
                                     <Font size="11.0" />
                                  </font>
                                  <HBox.margin>
-                                    <Insets left="5.0" right="5.0" top="5.0" />
+                                    <Insets top="5.0" />
                                  </HBox.margin>
                               </Button>
-                              <Button id="boot_button" fx:id="boot_button" mnemonicParsing="false" onAction="#boot" prefHeight="35.0" prefWidth="55.0" text="Boot">
+                              <Button id="boot_button" fx:id="boot_button" mnemonicParsing="false" onAction="#boot" prefHeight="35.0" prefWidth="55.0" text="Flash">
                                  <font>
                                     <Font size="11.0" />
                                  </font>
                                  <HBox.margin>
-                                    <Insets left="5.0" top="5.0" />
+                                    <Insets top="5.0" />
+                                 </HBox.margin>
+                              </Button>
+                              <Button id="simple_boot_button" fx:id="simple_boot_button" layoutX="575.0" layoutY="15.0" mnemonicParsing="false" onAction="#simple_boot" prefHeight="35.0" prefWidth="55.0" text="Boot">
+                                 <font>
+                                    <Font size="11.0" />
+                                 </font>
+                                 <HBox.margin>
+                                    <Insets right="5.0" top="5.0" />
                                  </HBox.margin>
                               </Button>
                            </children>

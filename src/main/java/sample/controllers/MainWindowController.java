@@ -178,6 +178,8 @@ public class MainWindowController {
     @FXML
     private Button boot_button;
     @FXML
+    private Button simple_boot_button;
+    @FXML
     private Button beep_button;
 
     @FXML
@@ -299,6 +301,15 @@ public class MainWindowController {
 
     /**
      * Вводит в режим boot loader'a
+     */
+    @FXML
+    public void simple_boot(ActionEvent event) {
+        CompletableFuture.runAsync(() -> sendCommandAction.accept("boot"))
+                .exceptionally(defaultExceptionHandler);
+    }
+
+    /**
+     * Вводит в режим boot loader'a, чистит flash память и устанавливает выбранный драйвер
      */
     @FXML
     public void boot(ActionEvent event) {
@@ -914,6 +925,7 @@ public class MainWindowController {
         disconnect_button.setDisable(!hasConnection);
         reboot_button.setDisable(!hasConnection);
         boot_button.setDisable(!hasConnection);
+        simple_boot_button.setDisable(!hasConnection);
         beep_button.setDisable(!hasConnection);
 
         sett_all_to_board.setDisable(!hasConnection);

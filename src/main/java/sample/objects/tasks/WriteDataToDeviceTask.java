@@ -151,7 +151,7 @@ public class WriteDataToDeviceTask extends Task<Void> {
             System.arraycopy(fileDataBytes, 0, byteArrayToWriteInFlash, 0, fileDataBytes.length);
 
             for (int pageNum = 0; pageNum < FLASH_MAX_PAGE_COUNT; pageNum++) {
-                System.out.println(format("Write data to page[%s]", pageNum));
+                print("Writing data to page [%s]", pageNum);
                 for (int time = 0; time < WRITE_FLASH_TIMES_TO_REPEAT; time++) {
 
                     // Проверим, а не закончили ли мы запись драйвера на контроллер
@@ -239,7 +239,7 @@ public class WriteDataToDeviceTask extends Task<Void> {
     private boolean checkFlashMemory() {
         byte[] readResultArray = new byte[FLASH_SIZE];
         for (int i = 0; i < FLASH_MAX_PAGE_COUNT; i++) {
-            System.out.println(format("read data from page [%s]", i));
+            print("read data from page [%s]", i);
             for (int time = 0; time < WRITE_FLASH_TIMES_TO_REPEAT; time++) {
 
                 // Проверяем версию, установленную на устройстве
@@ -257,17 +257,17 @@ public class WriteDataToDeviceTask extends Task<Void> {
                 }
             }
         }
-        System.out.println("Data successfully read from flash memory!");
+        print("Data successfully read from flash memory. Start data validation.");
 
         for (int i = 0; i < fileDataBytes.length; i++) {
             if (readResultArray[i] != fileDataBytes[i]) {
-                print(format("[%s] bytes not equals! Actual = '0x%02X'; Expected = '0x%02X'",
-                        i, readResultArray[i], fileDataBytes[i]));
+                print("[%s] bytes not equals! Actual = '0x%02X'; Expected = '0x%02X'",
+                        i, readResultArray[i], fileDataBytes[i]);
                 return false;
             }
         }
 
-        print("Driver successfully installed!");
+        print("Data validation complete! Driver successfully installed!");
         return true;
     }
 
