@@ -1,7 +1,9 @@
 package sample.controllers;
 
+import javafx.event.ActionEvent;
 import javafx.event.Event;
 import javafx.fxml.FXML;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressBar;
 import javafx.scene.control.TextArea;
@@ -16,6 +18,8 @@ public class ProgressWindowController {
     private TextArea console;
     @FXML
     private ProgressBar progress_bar;
+    @FXML
+    private Button ok_button;
 
     @FXML
     void initialize() {
@@ -39,8 +43,20 @@ public class ProgressWindowController {
         });
     }
 
+    /**
+     * Метод пытается подключиться к контроллеру
+     */
+    @FXML
+    public void closeWindow(ActionEvent event) {
+        closeWindow();
+    }
+
     public Label getLabel() {
         return label;
+    }
+
+    public Button getOkButton() {
+        return ok_button;
     }
 
     public TextArea getConsole() {

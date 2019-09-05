@@ -304,7 +304,9 @@ public class MainWindowController {
      */
     @FXML
     public void simple_boot(ActionEvent event) {
-        CompletableFuture.runAsync(() -> sendCommandAction.accept("boot"))
+        CompletableFuture.runAsync(simpleBootAction)
+                .exceptionally(defaultExceptionHandler)
+                .thenRun(disconnectAction)
                 .exceptionally(defaultExceptionHandler);
     }
 
@@ -561,6 +563,7 @@ public class MainWindowController {
 
     private final Runnable rebootAction = () -> sendCommandAction.accept("reboot");
     private final Runnable beepAction = () -> sendCommandAction.accept("beep");
+    private final Runnable simpleBootAction = () -> sendCommandAction.accept("boot");
     private final Runnable dcArmAction = () -> sendCommandAction.accept("dc arm");
     private final Runnable rpmArmAction = () -> sendCommandAction.accept("rpm arm");
     private final Function<Throwable, ? extends Void> defaultExceptionHandler = ex -> {
@@ -574,6 +577,7 @@ public class MainWindowController {
             c.getProgress_bar().progressProperty().bind(task.progressProperty());
             CompletableFuture.runAsync(task).thenRun(() -> {
                 setLabel(c.getLabel(), "All parameters loaded from board.");
+                c.getOkButton().setDisable(false);
                 try {
                     Thread.sleep(WAIT_MODAL_WINDOW_BEFORE_CLOSE_TIME);
                 } catch (InterruptedException e) {

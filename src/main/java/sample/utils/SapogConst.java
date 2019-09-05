@@ -30,7 +30,7 @@ public interface SapogConst {
 
 
     /* Timeout на ответ контроллера */
-    int DEVICE_ANSWER_TIMEOUT = 30000;
+    int DEVICE_ANSWER_TIMEOUT = 6000;
 
     /* Стандартное время на выполнение backEnd операции */
     long DEFAULT_TIME_OUT = 15;

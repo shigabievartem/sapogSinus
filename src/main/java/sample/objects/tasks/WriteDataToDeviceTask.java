@@ -60,6 +60,8 @@ public class WriteDataToDeviceTask extends Task<Void> {
             try {
                 // Если предыдущая операция прошла не успешно, последующие операции делать не надо
                 if (exc != null) {
+                    activateOkButton();
+                    exc.printStackTrace();
                     printError(progressWindowController.getConsole(), exc);
                     return false;
                 }
@@ -67,12 +69,20 @@ public class WriteDataToDeviceTask extends Task<Void> {
                 if (operationTitle != null) print("Executing operation: '%s'", operationTitle);
                 return CompletableFuture.supplyAsync(command).get(100, SECONDS);
             } catch (Exception e) {
+                activateOkButton();
+                e.printStackTrace();
                 printError(progressWindowController.getConsole(), e);
                 return false;
             } finally {
-                this.updateProgress(i.incrementAndGet(), operationCount);
+                int curValue = i.incrementAndGet();
+                this.updateProgress(curValue, operationCount);
+                if (curValue >= operationCount) activateOkButton();
             }
         };
+    }
+
+    private void activateOkButton() {
+        this.progressWindowController.getOkButton().setDisable(false);
     }
 
     private <T> BiFunction<? super T, Throwable, Boolean> prepareBiFunction(Runnable command, String operationTitle) {
@@ -120,8 +130,7 @@ public class WriteDataToDeviceTask extends Task<Void> {
                     }
             ).get(DEFAULT_TIME_OUT, SECONDS);
         } catch (Exception e) {
-            e.printStackTrace();
-            return false;
+            throw new RuntimeException(e);
         }
     }
 
@@ -144,30 +153,24 @@ public class WriteDataToDeviceTask extends Task<Void> {
      * Запись драйвера на контроллер
      */
     private Boolean writeDataToDeviceFunction() {
-        try {
+        // Дополним байты из файла пустыми значениями, чтобы дальше просто записать их в память
+        byte[] byteArrayToWriteInFlash = new byte[FLASH_SIZE];
+        System.arraycopy(fileDataBytes, 0, byteArrayToWriteInFlash, 0, fileDataBytes.length);
 
-            // Дополним байты из файла пустыми значениями, чтобы дальше просто записать их в память
-            byte[] byteArrayToWriteInFlash = new byte[FLASH_SIZE];
-            System.arraycopy(fileDataBytes, 0, byteArrayToWriteInFlash, 0, fileDataBytes.length);
+        for (int pageNum = 0; pageNum < FLASH_MAX_PAGE_COUNT; pageNum++) {
+            print("Writing data to page [%s]", pageNum);
+            for (int time = 0; time < WRITE_FLASH_TIMES_TO_REPEAT; time++) {
 
-            for (int pageNum = 0; pageNum < FLASH_MAX_PAGE_COUNT; pageNum++) {
-                print("Writing data to page [%s]", pageNum);
-                for (int time = 0; time < WRITE_FLASH_TIMES_TO_REPEAT; time++) {
+                // Проверим, а не закончили ли мы запись драйвера на контроллер
+                if (fileDataBytes.length < calculateStartBytePosition(pageNum, time))
+                    return true;
 
-                    // Проверим, а не закончили ли мы запись драйвера на контроллер
-                    if (fileDataBytes.length < calculateStartBytePosition(pageNum, time))
-                        return true;
+                mainController.sendBytes(WRITE_MEMORY.getBytes());
+                if (!isAck(backendCaller.readDataFromDevice(WRITE_MEMORY.getExpectedBytesCount(), DEVICE_ANSWER_TIMEOUT)[0]))
+                    return false;
 
-                    mainController.sendBytes(WRITE_MEMORY.getBytes());
-                    if (!isAck(backendCaller.readDataFromDevice(WRITE_MEMORY.getExpectedBytesCount(), DEVICE_ANSWER_TIMEOUT)[0]))
-                        return false;
-
-                    writePageMemory(pageNum, time, byteArrayToWriteInFlash);
-                }
+                writePageMemory(pageNum, time, byteArrayToWriteInFlash);
             }
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            return false;
         }
         return true;
     }
