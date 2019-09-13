@@ -513,7 +513,7 @@ public class MainWindowController {
             load_config_from_file.setDisable(true);
             load_default_config.setDisable(true);
 
-            Thread.sleep(2500);
+            Thread.sleep(4000);
 
         } catch (Exception e) {
             e.printStackTrace();
