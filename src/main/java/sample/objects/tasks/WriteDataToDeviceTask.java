@@ -3,6 +3,7 @@ package sample.objects.tasks;
 import javafx.concurrent.Task;
 import sample.controllers.MainWindowController;
 import sample.controllers.ProgressWindowController;
+import sample.objects.exceptions.OperationTimeOutException;
 import sample.utils.BackendCaller;
 import sample.utils.SapogUtils;
 
@@ -98,9 +99,23 @@ public class WriteDataToDeviceTask extends Task<Void> {
 
     /* Комманда для начала взаимодействия с платой */
     private Boolean connectToDevice() {
-        // Проверяем версию, установленную на устройстве
-        mainController.sendBytes(START_BOOT_COMMAND.getBytes());
-        return isAck(backendCaller.readDataFromDevice(START_BOOT_COMMAND.getExpectedBytesCount(), DEVICE_ANSWER_TIMEOUT)[0]);
+        for (int i = 0; i < INIT_TIMES; i++) {
+            try {
+                // Проверяем версию, установленную на устройстве
+                mainController.sendBytes(START_BOOT_COMMAND.getBytes());
+                if (isAck(backendCaller.readDataFromDevice(START_BOOT_COMMAND.getExpectedBytesCount(), DEVICE_ANSWER_TIMEOUT)[0])) {
+                    print("Device successfully initialized!");
+                    return true;
+                } else {
+                    print("Device initialization error! Device return Nack answer!");
+                    return false;
+                }
+            } catch (OperationTimeOutException ex) {
+                print("Failed connection attempt [%s/%s]. No response from device.", i + 1, INIT_TIMES);
+            }
+        }
+        print("Can't initialize device. Reboot your device!");
+        throw new RuntimeException("Init device exception.");
     }
 
     /* Считываем версию драйвера с платы */

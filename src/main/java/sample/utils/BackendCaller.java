@@ -1,9 +1,13 @@
 package sample.utils;
 
 import javafx.scene.control.TextArea;
-import jssc.*;
+import jssc.SerialNativeInterface;
+import jssc.SerialPortException;
+import jssc.SerialPortList;
+import jssc.SerialPortTimeoutException;
 import org.jetbrains.annotations.NotNull;
 import sample.objects.ConnectionInfo;
+import sample.objects.exceptions.OperationTimeOutException;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -15,7 +19,6 @@ import java.util.regex.Pattern;
 import static jssc.SerialPort.BAUDRATE_115200;
 import static jssc.SerialPort.DATABITS_8;
 import static sample.utils.SapogConst.NO_CONNECTION;
-import static sample.utils.SapogUtils.printBytes;
 
 public class BackendCaller {
 
@@ -156,10 +159,14 @@ public class BackendCaller {
     public byte[] readDataFromDevice(int byteCount, int timeout) {
         try {
             return Objects.requireNonNull(serial).readData(byteCount, timeout);
-        } catch (SerialPortTimeoutException | SerialPortException e) {
+        } catch (SerialPortException e) {
             System.err.println("Error when read data from device");
             e.printStackTrace();
             throw new RuntimeException(e);
+        } catch (SerialPortTimeoutException e) {
+            System.err.println("Read data operation time is out.");
+            e.printStackTrace();
+            throw new OperationTimeOutException(e);
         }
     }
 }
