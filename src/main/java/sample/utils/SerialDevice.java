@@ -150,8 +150,8 @@ public class SerialDevice {
                 try {
                     if ((buffer = port.readBytes()) != null) {
                         //TODO удалить лог
-                        System.out.println("Bytes from device:");
-                        printBytes(buffer);
+//                        System.out.println("Bytes from device:");
+//                        printBytes(buffer);
                         for (byte b : buffer) {
                             //message.append((char) b);
                             lastLine.append((char) b);
@@ -312,6 +312,9 @@ public class SerialDevice {
             port.setParams(baudRate, dataBits, stopBits, jsscParity);
             portState = SerialState.IDLE;
             if (!isBootloaderMode) {
+                if (!isConnected()) {
+                    throw new RuntimeException(String.format("Device is not connected to port '%s'!", this.port.getPortName()));
+                }
                 // Для дебага через консольку (общения с контроллером перенести при загрузке bootloader'a)
                 startReaderThread();
 
@@ -326,6 +329,26 @@ public class SerialDevice {
 
         LOG.info("Device {} is started successfully", getPortSpec());
         reopenAt = 0;
+    }
+
+    /**
+     * Проверка, действительно ли устройство подключено
+     */
+    private boolean isConnected() {
+        try {
+            // Отправим комманду с получением текущей конфигурации устройства
+            tryWriteBytes("stat2\r\n".getBytes());
+            TimeUnit.MILLISECONDS.sleep(1000);
+            // Если устройство отвечает на отправленную команду, значит мы успешно подключены
+            byte[] buffer = port.readBytes();
+            return buffer != null && buffer.length > 0;
+        } catch (IOException | InterruptedException e) {
+            System.out.println(format("stat2 command check connection exception: %s", e));
+        } catch (SerialPortException e) {
+            e.printStackTrace();
+        }
+
+        return false;
     }
 
     public void startReaderThread() {
@@ -380,8 +403,8 @@ public class SerialDevice {
     private synchronized void tryWriteBytes(byte[] buffer) throws IOException {
         try {
             // TODO удалить логи
-            System.out.println("Writing bytes to device:");
-            printBytes(buffer);
+//            System.out.println("Writing bytes to device:");
+//            printBytes(buffer);
             boolean success = port.writeBytes(buffer);
             if (success) {
                 //logToConsole(buffer);
@@ -482,14 +505,14 @@ public class SerialDevice {
     public byte[] readData() throws SerialPortException {
         System.out.println("Start reading data from port...");
         byte[] bytes = Objects.requireNonNull(port).readBytes();
-        printBytes(bytes);
+//        printBytes(bytes);
         return bytes;
     }
 
     public byte[] readData(int byteCount, int timeout) throws SerialPortException, SerialPortTimeoutException {
         byte[] bytes = Objects.requireNonNull(port).readBytes(byteCount, timeout);
-        System.out.println("Bytes from device");
-        printBytes(bytes);
+//        System.out.println("Bytes from device");
+//        printBytes(bytes);
         return bytes;
     }
 }

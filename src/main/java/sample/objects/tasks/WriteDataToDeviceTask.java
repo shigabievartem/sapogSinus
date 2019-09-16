@@ -136,7 +136,7 @@ public class WriteDataToDeviceTask extends Task<Void> {
             return CompletableFuture.supplyAsync(
                     () -> {
                         if (dataFromDevice == null) return false;
-                        printBytes(dataFromDevice);
+//                        printBytes(dataFromDevice);
                         if (dataFromDevice.length != 5) return false;
                         if (!isAck(dataFromDevice[0])) return false;
                         String message = String.format("Bootloader version: %02X", dataFromDevice[1]);
@@ -267,7 +267,6 @@ public class WriteDataToDeviceTask extends Task<Void> {
 
                 try {
                     byte[] dataFromFlash = readPageMemory(i, time);
-                    System.out.println(format("read data size: %s", dataFromFlash.length));
                     System.arraycopy(dataFromFlash, 0, readResultArray, calculateStartBytePosition(i, time), dataFromFlash.length);
                 } catch (Exception ex) {
                     ex.printStackTrace();
