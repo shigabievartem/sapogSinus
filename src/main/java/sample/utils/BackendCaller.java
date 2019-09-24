@@ -129,15 +129,16 @@ public class BackendCaller {
         return "";
     }
 
-    public void closeMainWindow() {
+    public void closeSerial() {
         if (serial != null) {
             try {
                 serial.close();
             } catch (IOException e) {
                 e.printStackTrace();
+                throw new RuntimeException(e);
             }
         }
-        System.out.println("Main window closed, back know about it!");
+        System.out.println("Serial device was successfully closed!");
     }
 
     public String[] getPortNames() {

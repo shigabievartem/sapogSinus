@@ -323,7 +323,7 @@ public class SerialDevice {
             }
         } catch (SerialPortException e) {
             LOG.error("Cannot open port {}", getPortSpec());
-            readThreadShouldExit = true;
+            this.close();
             throw new IOException(e.toString());
         }
 

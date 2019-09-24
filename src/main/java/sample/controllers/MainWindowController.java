@@ -16,6 +16,7 @@ import javafx.stage.Stage;
 import javafx.stage.Window;
 import sample.objects.ButtonImpl;
 import sample.objects.ConnectionInfo;
+import sample.objects.exceptions.PortException;
 import sample.objects.filters.DecimalFilter;
 import sample.objects.filters.IntegerFilter;
 import sample.objects.tasks.LoadAllFromBoardTask;
@@ -460,7 +461,7 @@ public class MainWindowController {
             newScene.windowProperty().addListener((observableWindow, oldWindow, newWindow) -> {
                 if (oldWindow == null && newWindow != null) {
                     newWindow.setOnCloseRequest((windowEvent) -> {
-                        backendCaller.closeMainWindow();
+                        backendCaller.closeSerial();
                         updateConnectionStatusScheduler.stopScheduler();
                         dcValueReader.cancel();
                         ((Stage) windowEvent.getTarget()).close();
@@ -506,7 +507,7 @@ public class MainWindowController {
         try {
             backendCaller.connectInBootloaderMode(currentPort);
             System.out.println(format("Successfully connected to port: '%s' in bootloader mode", getPort()));
-
+            // TODO если не поможет обработка ошибки, можно перенести блокировку кнопок, перед коннектом
             port_button.setDisable(true);
             connect_button.setDisable(true);
             save_config_to_file.setDisable(true);
@@ -514,9 +515,12 @@ public class MainWindowController {
             load_default_config.setDisable(true);
 
             Thread.sleep(INIT_DEVICE_TIME);
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw new RuntimeException(e);
+        } catch (IOException ex) {
+            ex.printStackTrace();
+            throw new PortException(ex);
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            throw new RuntimeException(ex);
         }
     }
 

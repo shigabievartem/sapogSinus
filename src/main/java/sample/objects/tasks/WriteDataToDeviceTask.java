@@ -4,6 +4,7 @@ import javafx.concurrent.Task;
 import sample.controllers.MainWindowController;
 import sample.controllers.ProgressWindowController;
 import sample.objects.exceptions.OperationTimeOutException;
+import sample.objects.exceptions.PortException;
 import sample.utils.BackendCaller;
 import sample.utils.SapogUtils;
 
@@ -14,6 +15,7 @@ import java.util.function.Supplier;
 
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static javafx.scene.control.Alert.AlertType.ERROR;
 import static sample.objects.ByteCommands.*;
 import static sample.utils.SapogConst.*;
 import static sample.utils.SapogUtils.*;
@@ -70,9 +72,7 @@ public class WriteDataToDeviceTask extends Task<Void> {
                 if (operationTitle != null) print("Executing operation: '%s'", operationTitle);
                 return CompletableFuture.supplyAsync(command).get(100, SECONDS);
             } catch (Exception e) {
-                activateOkButton();
-                e.printStackTrace();
-                printError(progressWindowController.getConsole(), e);
+                handleException(e);
                 return false;
             } finally {
                 int curValue = i.incrementAndGet();
@@ -80,6 +80,23 @@ public class WriteDataToDeviceTask extends Task<Void> {
                 if (curValue >= operationCount) activateOkButton();
             }
         };
+    }
+
+    private void handleException(Throwable e) {
+        activateOkButton();
+        e.printStackTrace();
+        printError(progressWindowController.getConsole(), e);
+
+        if (e instanceof PortException) {
+            SapogUtils.alert(
+                    progressWindowController.getLabel().getScene().getWindow(),
+                    ERROR,
+                    "Connection to port error",
+                    null,
+                    "Your device in bootloader mode!\nTo continue working with program reboot your device",
+                    null
+            );
+        }
     }
 
     private void activateOkButton() {
