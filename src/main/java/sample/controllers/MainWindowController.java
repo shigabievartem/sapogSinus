@@ -431,6 +431,10 @@ public class MainWindowController {
 
     private final EventHandler<Event> connectionLostEventHandler = (conLostEvent) -> {
         try {
+            updateConnectionInfo.accept(NO_CONNECTION);
+
+            disconnect(null);
+
             SapogUtils.alert(mainElement.getScene().getWindow(), Alert.AlertType.WARNING,
                     "Connection lost...", null, "Do you want to reconnect?",
                     (isOk) -> {

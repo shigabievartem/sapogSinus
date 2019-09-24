@@ -1,5 +1,6 @@
 package sample.utils;
 
+import javafx.event.Event;
 import javafx.scene.control.TextArea;
 import jssc.SerialPort;
 import jssc.SerialPortException;
@@ -14,7 +15,7 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import static java.lang.String.format;
-import static sample.utils.SapogUtils.printBytes;
+import static sample.utils.SapogConst.Events.connectionLost;
 
 public class SerialDevice {
     private static final Logger LOG = LoggerFactory.getLogger(SerialDevice.class);
@@ -142,6 +143,8 @@ public class SerialDevice {
             StringBuilder message = new StringBuilder();
             System.out.println("Starting serialReader thread");
             StringBuilder lastLine = new StringBuilder();
+            // Количество раз, когда не удалось считать данные из буфера
+            int readEmptyBufferCount = 0;
             while (!readThreadShouldExit && (portState != SerialState.NOT_OPEN)) {
                 if (Thread.currentThread().isInterrupted()) {
                     return;
@@ -153,6 +156,7 @@ public class SerialDevice {
 //                        System.out.println("Bytes from device:");
 //                        printBytes(buffer);
                         for (byte b : buffer) {
+                            readEmptyBufferCount = 0;
                             //message.append((char) b);
                             lastLine.append((char) b);
                             if (b == '\n') {
@@ -169,6 +173,19 @@ public class SerialDevice {
                                 lastLine.setLength(0);
                             }
                         }
+                    } else {
+                        System.out.println(readEmptyBufferCount);
+                        // Если мы не получили из буфера ничего 100 раз, то проверим, возможно у нас просто отвалилось соединение
+                        if (++readEmptyBufferCount > 150000) {
+                            readEmptyBufferCount = 0;
+                            System.out.println("Check connection...");
+                            if (!isConnected()) {
+                                System.out.println("Connection to device lost!");
+                                mainConsole.fireEvent(new Event(connectionLost));
+                                return;
+                            }
+                        }
+
                     }
                 } catch (SerialPortException e) {
                     //logToConsole(e.toString().getBytes());
@@ -203,10 +220,10 @@ public class SerialDevice {
 
     private boolean tryExtractCommand(String s) {
         if (
-                    (s.indexOf("ch> stat2\r\n") == 0) ||
-                    (s.indexOf("ch> cfg list\r\n") == 0) ||
-                    (s.indexOf("ch> cfg set ") == 0) ||
-                    (s.indexOf("ch> beep\r\n") == 0)
+                (s.indexOf("ch> stat2\r\n") == 0) ||
+                        (s.indexOf("ch> cfg list\r\n") == 0) ||
+                        (s.indexOf("ch> cfg set ") == 0) ||
+                        (s.indexOf("ch> beep\r\n") == 0)
         ) {
             return true;
         }
@@ -265,8 +282,8 @@ public class SerialDevice {
             int idxEq = s.indexOf("=");
             if (
                     (idxKey == 0) &&
-                    (idxEq > param.length()) &&
-                    (idxBracket > idxEq + 1)
+                            (idxEq > param.length()) &&
+                            (idxBracket > idxEq + 1)
             ) {
                 String valStr = s.substring(idxEq + 1, idxBracket);
                 valStr = valStr.replaceAll("\\s", "");
@@ -300,11 +317,21 @@ public class SerialDevice {
         port = new SerialPort(device);
         int jsscParity = 0;
         switch (parity) {
-            case NONE: jsscParity = SerialPort.PARITY_NONE; break;
-            case ODD: jsscParity = SerialPort.PARITY_ODD; break;
-            case EVEN: jsscParity = SerialPort.PARITY_EVEN; break;
-            case MARK: jsscParity = SerialPort.PARITY_MARK; break;
-            case SPACE: jsscParity = SerialPort.PARITY_SPACE; break;
+            case NONE:
+                jsscParity = SerialPort.PARITY_NONE;
+                break;
+            case ODD:
+                jsscParity = SerialPort.PARITY_ODD;
+                break;
+            case EVEN:
+                jsscParity = SerialPort.PARITY_EVEN;
+                break;
+            case MARK:
+                jsscParity = SerialPort.PARITY_MARK;
+                break;
+            case SPACE:
+                jsscParity = SerialPort.PARITY_SPACE;
+                break;
         }
 
         try {
@@ -313,6 +340,7 @@ public class SerialDevice {
             portState = SerialState.IDLE;
             if (!isBootloaderMode) {
                 if (!isConnected()) {
+                    this.close();
                     throw new RuntimeException(String.format("Device is not connected to port '%s'!", this.port.getPortName()));
                 }
                 // Для дебага через консольку (общения с контроллером перенести при загрузке bootloader'a)
@@ -490,10 +518,13 @@ public class SerialDevice {
             //just do nothing, there is no port
         } else {
             try {
+                System.out.println("мы внутри!");
                 readThreadShouldExit = true;
                 if (readerThread != null) readerThread.interrupt();
                 if (stat2Thread != null) stat2Thread.interrupt();
-                port.closePort();
+                if (port.isOpened()) {
+                    port.closePort();
+                }
                 portState = SerialState.NOT_OPEN;
             } catch (SerialPortException e) {
                 portState = SerialState.EXCEPTION;

@@ -135,7 +135,6 @@ public class BackendCaller {
                 serial.close();
             } catch (IOException e) {
                 e.printStackTrace();
-                throw new RuntimeException(e);
             }
         }
         System.out.println("Serial device was successfully closed!");
