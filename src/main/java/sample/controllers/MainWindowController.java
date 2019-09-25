@@ -292,11 +292,7 @@ public class MainWindowController {
 
     private final Runnable disconnectAction = () -> {
         updateConnectionInfo.accept(NO_CONNECTION);
-        try {
-            backendCaller.disconnect();
-        } catch (IOException e) {
-            IOExceptionHandler.accept(e);
-        }
+        backendCaller.closeSerial();
         System.out.println(format("Controller manually disconnected from port '%s'", getPort()));
     };
 

@@ -16,6 +16,7 @@ import java.util.concurrent.TimeUnit;
 
 import static java.lang.String.format;
 import static sample.utils.SapogConst.Events.connectionLost;
+import static sample.utils.SapogUtils.printBytes;
 
 public class SerialDevice {
     private static final Logger LOG = LoggerFactory.getLogger(SerialDevice.class);
@@ -180,7 +181,7 @@ public class SerialDevice {
                             System.out.println("Check connection...");
                             if (!isConnected()) {
                                 System.out.println("Connection to device lost!");
-                                mainConsole.fireEvent(new Event(connectionLost));
+                                if (!readThreadShouldExit) mainConsole.fireEvent(new Event(connectionLost));
                                 return;
                             }
                         }
@@ -368,8 +369,10 @@ public class SerialDevice {
             TimeUnit.MILLISECONDS.sleep(1000);
             // Если устройство отвечает на отправленную команду, значит мы успешно подключены
             byte[] buffer = port.readBytes();
+            printBytes(buffer);
+
             // TODO допилить парсинг байтов
-            return buffer != null && buffer.length > 0;
+            return buffer != null && buffer.length > 0 && checkBuffer(buffer);
         } catch (IOException | InterruptedException e) {
             System.out.println(format("stat2 command check connection exception: %s", e));
         } catch (SerialPortException e) {
@@ -377,6 +380,26 @@ public class SerialDevice {
         }
 
         return false;
+    }
+
+    private boolean checkBuffer(byte[] buffer) {
+
+
+//        StringBuilder lastLine = new StringBuilder();
+
+//        for (byte b : buffer) {
+//            lastLine.append((char) b);
+//            if (b == '\n' && tryExtractStat2(lastLine.toString())) {
+//                return true;
+//            }
+//        }
+//        return false;
+        return !(buffer.length == 5
+                && buffer[0] == (byte) 0xFF
+                && buffer[1] == (byte) 0x5F
+                && buffer[2] == (byte) 0xBF
+                && buffer[3] == (byte) 0x7F
+                && buffer[4] == (byte) 0xFF);
     }
 
     public void startReaderThread() {
@@ -518,14 +541,11 @@ public class SerialDevice {
             //just do nothing, there is no port
         } else {
             try {
-                System.out.println("мы внутри!");
                 readThreadShouldExit = true;
                 if (readerThread != null) readerThread.interrupt();
                 if (stat2Thread != null) stat2Thread.interrupt();
                 if (port.isOpened()) {
                     port.closePort();
-                    // TODO  надо ли занулять порт...
-                    port = null;
                 }
                 portState = SerialState.NOT_OPEN;
             } catch (SerialPortException e) {

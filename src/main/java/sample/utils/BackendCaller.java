@@ -16,6 +16,7 @@ import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
+import static java.lang.String.format;
 import static jssc.SerialPort.BAUDRATE_115200;
 import static jssc.SerialPort.DATABITS_8;
 import static sample.utils.SapogConst.NO_CONNECTION;
@@ -62,13 +63,7 @@ public class BackendCaller {
     }
 
     public synchronized void connect(@NotNull String port) throws IOException {
-        Objects.requireNonNull(port, "Empty port!");
-        if ((serial == null) || !serial.isOpened()) {
-            serial = new SerialDevice("default_port", port);
-            serial.setConsole(mainConsole);
-        } else if (serial.isOpened()) {
-            //TODO can not open port when it's already open, this is an error?
-        }
+        connectImpl(port, new SerialDevice("default_port", port));
     }
 
     /**
@@ -77,27 +72,23 @@ public class BackendCaller {
      * Отдельный метод с рассчетом на то, что возможно параметры подключения будут браться из интерфейса
      */
     public synchronized void connectInBootloaderMode(@NotNull String port) throws IOException {
+        connectImpl(port, new SerialDevice("bootloader_mode", port, BAUDRATE_115200, DATABITS_8, Parity.EVEN, 10, true));
+    }
+
+    private void connectImpl(String port, SerialDevice device) {
         Objects.requireNonNull(port, "Empty port!");
         if ((serial == null) || !serial.isOpened()) {
-            serial = new SerialDevice("bootloader_mode", port, BAUDRATE_115200, DATABITS_8, Parity.EVEN, 10, true);
+            serial = device;
             serial.setConsole(mainConsole);
-        } else if (serial.isOpened()) {
-            //TODO can not open port when it's already open, this is an error?
+        } else {
+            System.out.println(format("Port '%s' is already open!", port));
         }
+
     }
 
     public synchronized void activateConsole() {
         if (serial != null && serial.isOpened())
             serial.startReaderThread();
-    }
-
-    public synchronized void disconnect() throws IOException {
-        if (serial == null) {
-            //TODO throw exception?
-        } else {
-            serial.close();
-            serial = null;
-        }
     }
 
     public Map<String, Object> getCurrentValues() throws IOException {
@@ -133,11 +124,11 @@ public class BackendCaller {
         if (serial != null) {
             try {
                 serial.close();
+                System.out.println("Serial device was successfully disconnected!");
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
-        System.out.println("Serial device was successfully closed!");
     }
 
     public String[] getPortNames() {
