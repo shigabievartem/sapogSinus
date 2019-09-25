@@ -75,7 +75,7 @@
                                     <Insets top="5.0" />
                                  </HBox.margin>
                               </Button>
-                              <Button id="simple_boot_button" fx:id="simple_boot_button" layoutX="575.0" layoutY="15.0" mnemonicParsing="false" onAction="#simple_boot" prefHeight="35.0" prefWidth="55.0" text="Boot">
+                              <Button id="simple_boot_button" fx:id="simple_boot_button" layoutX="575.0" layoutY="15.0" mnemonicParsing="false" onAction="#simpleBoot" prefHeight="35.0" prefWidth="55.0" text="Boot">
                                  <font>
                                     <Font size="11.0" />
                                  </font>

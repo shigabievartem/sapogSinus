@@ -368,6 +368,7 @@ public class SerialDevice {
             TimeUnit.MILLISECONDS.sleep(1000);
             // Если устройство отвечает на отправленную команду, значит мы успешно подключены
             byte[] buffer = port.readBytes();
+            // TODO допилить парсинг байтов
             return buffer != null && buffer.length > 0;
         } catch (IOException | InterruptedException e) {
             System.out.println(format("stat2 command check connection exception: %s", e));
@@ -523,6 +524,8 @@ public class SerialDevice {
                 if (stat2Thread != null) stat2Thread.interrupt();
                 if (port.isOpened()) {
                     port.closePort();
+                    // TODO  надо ли занулять порт...
+                    port = null;
                 }
                 portState = SerialState.NOT_OPEN;
             } catch (SerialPortException e) {

@@ -304,7 +304,7 @@ public class MainWindowController {
      * Вводит в режим boot loader'a
      */
     @FXML
-    public void simple_boot(ActionEvent event) {
+    public void simpleBoot(ActionEvent event) {
         CompletableFuture.runAsync(simpleBootAction)
                 .exceptionally(defaultExceptionHandler)
                 .thenRun(disconnectAction)
