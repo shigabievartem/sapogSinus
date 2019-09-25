@@ -174,7 +174,6 @@ public class SerialDevice {
                             }
                         }
                     } else {
-                        System.out.println(readEmptyBufferCount);
                         // Если мы не получили из буфера ничего 100 раз, то проверим, возможно у нас просто отвалилось соединение
                         if (++readEmptyBufferCount > 150000) {
                             readEmptyBufferCount = 0;
