@@ -52,6 +52,11 @@ public interface SapogConst {
     long INIT_DEVICE_TIME = 3 * 1000;
 
     /**
+     * Время инициализации контроллера
+     */
+    long CLOSE_PORT_TIME = 2 * 1000;
+
+    /**
      * Кол-во попыток отправить команду инициализации, перед тем как пробросить ошибку
      */
     long INIT_TIMES = 3;

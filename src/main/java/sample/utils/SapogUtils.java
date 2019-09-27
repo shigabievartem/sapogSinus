@@ -206,7 +206,7 @@ public class SapogUtils {
 
     public static String formatDecimalValue(Object value) {
         NumberFormat nf = NumberFormat.getNumberInstance(Locale.US);
-        DecimalFormat formatter = (DecimalFormat)nf;
+        DecimalFormat formatter = (DecimalFormat) nf;
         formatter.applyPattern("#.##");
         return formatter.format(value);
     }
@@ -257,11 +257,26 @@ public class SapogUtils {
         return null; //---
     }
 
+    /**
+     * Метод печатает байты в битовом представлении
+     */
     public static void printBytes(byte[] bytes) {
         if (bytes == null || bytes.length == 0) return;
         for (byte b : bytes) {
             System.out.println(String.format("0x%02X", b));
         }
+    }
+
+    /**
+     * Метод печатает байты в текстовом представлении
+     */
+    public static void printBytesString(byte[] bytes) {
+        if (bytes == null || bytes.length == 0) return;
+        StringBuilder builder = new StringBuilder();
+        for (byte b : bytes) {
+            builder.append((char) b);
+        }
+        System.out.println(builder.toString());
     }
 
     public static byte[] parseFileToBytesArray(File file) {

@@ -294,6 +294,11 @@ public class MainWindowController {
         updateConnectionInfo.accept(NO_CONNECTION);
         backendCaller.closeSerial();
         System.out.println(format("Controller manually disconnected from port '%s'", getPort()));
+        try {
+            Thread.sleep(CLOSE_PORT_TIME);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     };
 
     /**
@@ -506,7 +511,7 @@ public class MainWindowController {
         String currentPort = getPort();
         try {
             backendCaller.connectInBootloaderMode(currentPort);
-            System.out.println(format("Successfully connected to port: '%s' in bootloader mode", getPort()));
+            System.out.println(format("Successfully connected to port: '%s' in bootloader mode", currentPort));
             // TODO если не поможет обработка ошибки, можно перенести блокировку кнопок, перед коннектом
             port_button.setDisable(true);
             connect_button.setDisable(true);
@@ -523,6 +528,24 @@ public class MainWindowController {
             throw new RuntimeException(ex);
         }
     }
+
+//    private void tryConnectToPort(String currentPort, boolean isBootloaderMode) {
+//        for (int i = 0; i < INIT_TIMES; i++) {
+//            try {
+//                if (isBootloaderMode) {
+//                    backendCaller.connectInBootloaderMode(currentPort);
+//                }  else {
+//                    backendCaller.connect(currentPort);
+//                }
+//                return;
+//            }  catch (IOException ex) {
+//                ex.printStackTrace();
+//                if (i == INIT_TIMES-1) throw new PortException(ex);
+//            } catch (Exception ex) {
+//
+//            }
+//        }
+//    }
 
     private final Consumer<String> sendCommandAction = text -> {
         String serverAnswer;
