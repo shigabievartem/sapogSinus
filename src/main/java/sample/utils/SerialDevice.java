@@ -68,8 +68,9 @@ public class SerialDevice {
      * @param parity           - Parity
      * @param timeout          - timeout в секундах
      * @param isBootloaderMode - в каком режиме находится контролер: true - в режиме bootloader'a, иначе - false
+     * @param mainConsole      - консоль для логирования
      */
-    public SerialDevice(@NotNull String name, @NotNull String port, int newBaud, int dataBits, @NotNull Parity parity, long timeout, boolean isBootloaderMode) throws IOException {
+    public SerialDevice(@NotNull String name, @NotNull String port, int newBaud, int dataBits, @NotNull Parity parity, long timeout, boolean isBootloaderMode, TextArea mainConsole) throws IOException {
         // TODO Refactor
         // TODO throw exception
         this.name = name;
@@ -80,6 +81,7 @@ public class SerialDevice {
         this.parity = parity;
         this.reopenTimeoutMS = timeout * 1000;
         this.traceWriteFailures = true;
+        this.mainConsole = mainConsole;
 
         if (!isBootloaderMode) initializeParamMap();
 
@@ -87,10 +89,10 @@ public class SerialDevice {
     }
 
 
-    public SerialDevice(@NotNull String name, @NotNull String newDevice) throws IOException {
+    public SerialDevice(@NotNull String name, @NotNull String newDevice, TextArea mainConsole) throws IOException {
         // TODO Refactor, inherit from main constructor
         // TODO throw exception
-        this(name, newDevice, SerialPort.BAUDRATE_115200, SerialPort.DATABITS_8, Parity.NONE, 1, false);
+        this(name, newDevice, SerialPort.BAUDRATE_115200, SerialPort.DATABITS_8, Parity.NONE, 1, false, mainConsole);
     }
 
     /**
@@ -177,7 +179,6 @@ public class SerialDevice {
                         // Если мы не получили из буфера ничего 100 раз, то проверим, возможно у нас просто отвалилось соединение
                         if (++readEmptyBufferCount > 150000) {
                             readEmptyBufferCount = 0;
-                            System.out.println("Check connection...");
                             if (!isConnected()) {
                                 System.out.println("Connection to device lost!");
                                 if (!readThreadShouldExit) mainConsole.fireEvent(new Event(connectionLost));
@@ -369,7 +370,7 @@ public class SerialDevice {
             // Если устройство отвечает на отправленную команду, значит мы успешно подключены
             byte[] buffer = port.readBytes();
 
-            return buffer != null && buffer.length > 0 && checkBuffer(buffer);
+            return checkBuffer(buffer);
         } catch (IOException | InterruptedException e) {
             System.out.println(format("stat2 command check connection exception: %s", e));
         } catch (SerialPortException e) {
@@ -385,12 +386,22 @@ public class SerialDevice {
      * @param buffer - байты, считанные с утройства
      */
     private boolean checkBuffer(byte[] buffer) {
+        if (buffer == null || buffer.length == 0) {
+            return false;
+        }
         StringBuilder lastLine = new StringBuilder();
 
         for (byte b : buffer) {
             lastLine.append((char) b);
         }
-        return lastLine.toString().toLowerCase().contains("stat");
+        // В режиме bootloader'a контроллер не понимает команду stat2 и возвращает ответ не тот, который мы ожидаем
+        boolean isBootloaderMode = !lastLine.toString().toLowerCase().contains("stat");
+        System.out.println("мы тут");
+        if (isBootloaderMode) {
+            logToConsole("Try connect to device in bootloader mode! Reboot your device to continue working with application.");
+        }
+        // Устройство подключено, если оно отвечает
+        return !isBootloaderMode;
     }
 
     public void startReaderThread() {
@@ -440,6 +451,10 @@ public class SerialDevice {
 
     private void logToConsole(byte[] buffer) {
         if (mainConsole != null) SapogUtils.printDirect(mainConsole, new String(buffer));
+    }
+
+    private void logToConsole(String template, Object... params) {
+        if (mainConsole != null) SapogUtils.printDirect(mainConsole, template, params);
     }
 
     private synchronized void tryWriteBytes(byte[] buffer) throws IOException {

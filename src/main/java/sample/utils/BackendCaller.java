@@ -63,7 +63,7 @@ public class BackendCaller {
     }
 
     public synchronized void connect(@NotNull String port) throws IOException {
-        connectImpl(port, new SerialDevice("default_port", port));
+        connectImpl(port, new SerialDevice("default_port", port, mainConsole));
     }
 
     /**
@@ -72,18 +72,17 @@ public class BackendCaller {
      * Отдельный метод с рассчетом на то, что возможно параметры подключения будут браться из интерфейса
      */
     public synchronized void connectInBootloaderMode(@NotNull String port) throws IOException {
-        connectImpl(port, new SerialDevice("bootloader_mode", port, BAUDRATE_115200, DATABITS_8, Parity.EVEN, 10, true));
+        connectImpl(port, new SerialDevice("bootloader_mode", port, BAUDRATE_115200, DATABITS_8, Parity.EVEN, 10, true, mainConsole));
     }
 
     private void connectImpl(String port, SerialDevice device) {
         Objects.requireNonNull(port, "Empty port!");
+        Objects.requireNonNull(device, "Empty device!");
         if ((serial == null) || !serial.isOpened()) {
             serial = device;
-            serial.setConsole(mainConsole);
         } else {
             System.out.println(format("Port '%s' is already open!", port));
         }
-
     }
 
     public synchronized void activateConsole() {
