@@ -15,6 +15,8 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import static java.lang.String.format;
+import static jssc.SerialPortException.TYPE_PORT_BUSY;
+import static sample.utils.SapogConst.CLOSE_PORT_TIME;
 import static sample.utils.SapogConst.Events.connectionLost;
 
 public class SerialDevice {
@@ -334,7 +336,7 @@ public class SerialDevice {
         }
 
         try {
-            port.openPort();
+            tryOpenPort();
             port.setParams(baudRate, dataBits, stopBits, jsscParity);
             portState = SerialState.IDLE;
             if (!isBootloaderMode) {
@@ -356,6 +358,25 @@ public class SerialDevice {
 
         LOG.info("Device {} is started successfully", getPortSpec());
         reopenAt = 0;
+    }
+
+    private void tryOpenPort() throws SerialPortException {
+        if (port == null) return;
+        try {
+            port.openPort();
+        } catch (SerialPortException e) {
+            if (TYPE_PORT_BUSY.equalsIgnoreCase(e.getExceptionType())) {
+                try {
+                    System.out.println("Port busy. Waiting  %s seconds and try to reconnect.");
+                    Thread.sleep(CLOSE_PORT_TIME);
+                    port.openPort();
+                } catch (InterruptedException ex) {
+                    ex.printStackTrace();
+                }
+            } else {
+                throw e;
+            }
+        }
     }
 
     /**
